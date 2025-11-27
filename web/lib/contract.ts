@@ -1,6 +1,5 @@
-import donationArtifact from "../../blockchain/artifacts/contracts/DonationRegistry.sol/DonationRegistry.json";
-import { Address } from "viem";
+import donationAbi from "../abi/DonationRegistry.json";
 
-export const CONTRACT_ADDRESS: Address = "0x..."; // replace after deployment
+export const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
-export const CONTRACT_ABI = donationArtifact.abi;
+export const CONTRACT_ABI = donationAbi.abi;
