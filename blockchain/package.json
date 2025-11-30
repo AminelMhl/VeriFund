@@ -1,15 +1,24 @@
 {
-  "name": "blockchain",
+  "name": "verifund-blockchain",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "test:gas": "REPORT_GAS=true npx hardhat test",
+    "test:coverage": "npx hardhat coverage",
+    "node": "npx hardhat node",
+    "deploy:local": "npx hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "npx hardhat run scripts/deploy.js --network sepolia",
+    "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet",
+    "verify": "npx hardhat run scripts/verify.js",
+    "clean": "npx hardhat clean"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["ethereum", "solidity", "hardhat", "donation", "charity", "blockchain"],
+  "author": "VeriFund Team",
+  "license": "MIT",
   "type": "commonjs",
-  "description": "This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.",
+  "description": "VeriFund - Decentralized donation platform smart contracts for transparent charity fundraising",
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
     "@nomicfoundation/hardhat-ethers": "^3.1.2",

@@ -1,8 +1,5 @@
-
-// Path: related project file: /mnt/data/PM.pdf
-// Solidity version
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
 /*
   DonationRegistry

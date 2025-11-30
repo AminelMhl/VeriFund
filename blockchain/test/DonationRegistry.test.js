@@ -45,9 +45,13 @@ describe("DonationRegistry", function () {
     });
 
     it("Should emit CampaignCreated event", async function () {
-      await expect(donationRegistry.connect(campaignOwner).createCampaign(METADATA_URI, GOAL))
+      const tx = await donationRegistry.connect(campaignOwner).createCampaign(METADATA_URI, GOAL);
+      const receipt = await tx.wait();
+      const block = await ethers.provider.getBlock(receipt.blockNumber);
+      
+      await expect(tx)
         .to.emit(donationRegistry, "CampaignCreated")
-        .withArgs(1, campaignOwner.address, METADATA_URI, GOAL, await getBlockTimestamp());
+        .withArgs(1, campaignOwner.address, METADATA_URI, GOAL, block.timestamp);
     });
 
     it("Should increment nextCampaignId", async function () {
