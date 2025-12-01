@@ -1,8 +1,15 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
-// Validate required env vars for non-local deployments
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
+// Helper function to get valid accounts array
+function getAccounts() {
+  const privateKey = process.env.PRIVATE_KEY;
+  // Check if private key exists and is valid (64 hex chars or 66 with 0x prefix)
+  if (privateKey && (privateKey.length === 64 || (privateKey.startsWith("0x") && privateKey.length === 66))) {
+    return [privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`];
+  }
+  return [];
+}
 
 module.exports = {
   solidity: {
@@ -25,12 +32,12 @@ module.exports = {
     },
     sepolia: {
       url: process.env.SEPOLIA_RPC || "",
-      accounts: PRIVATE_KEY !== "0x0000000000000000000000000000000000000000000000000000000000000000" ? [PRIVATE_KEY] : [],
+      accounts: getAccounts(),
       chainId: 11155111,
     },
     mainnet: {
       url: process.env.MAINNET_RPC || "",
-      accounts: PRIVATE_KEY !== "0x0000000000000000000000000000000000000000000000000000000000000000" ? [PRIVATE_KEY] : [],
+      accounts: getAccounts(),
       chainId: 1,
     },
   },
