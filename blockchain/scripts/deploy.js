@@ -25,9 +25,10 @@ async function main() {
   const contractAddress = await donationRegistry.getAddress();
   console.log("DonationRegistry deployed to:", contractAddress);
 
-  // Verify owner is set correctly
-  const owner = await donationRegistry.owner();
-  console.log("Contract owner:", owner);
+  // Verify admin role is set correctly (using AccessControl)
+  const DEFAULT_ADMIN_ROLE = await donationRegistry.DEFAULT_ADMIN_ROLE();
+  const isAdmin = await donationRegistry.hasRole(DEFAULT_ADMIN_ROLE, deployer.address);
+  console.log("Deployer has admin role:", isAdmin);
 
   // Save deployment info
   const deploymentInfo = {
