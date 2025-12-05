@@ -1,18 +1,22 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
+import { useAccount } from "wagmi";
 import Header from "@/components/Header";
 import CampaignDetails from "@/components/CampaignDetails";
-
-export const metadata: Metadata = {
-  title: "Campaign Details | VeriFund",
-  description: "View detailed information about this charity campaign.",
-};
+import DonationForm from "@/components/DonationForm";
+import WalletPrompt from "@/components/WalletPrompt";
+import { useCampaign } from "@/hooks/useCampaigns";
 
 export default function CampaignDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
+  const { isConnected } = useAccount();
+  const campaignId = BigInt(params.id);
+  const { campaign, refetch } = useCampaign(campaignId);
+
   return (
     <>
       <Header />
@@ -30,18 +34,20 @@ export default function CampaignDetailPage({
             display: "inline-flex",
             alignItems: "center",
             gap: "0.5rem",
-            color: "#667eea",
+            color: "#588157",
             textDecoration: "none",
             fontSize: "0.9375rem",
             fontWeight: 500,
             marginBottom: "2rem",
-            transition: "gap 0.2s ease",
+            transition: "gap 0.2s ease, color 0.2s ease",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.gap = "0.75rem";
+            e.currentTarget.style.color = "#3a5a40";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.gap = "0.5rem";
+            e.currentTarget.style.color = "#588157";
           }}
         >
           <span>←</span> Back to Campaigns
@@ -50,27 +56,21 @@ export default function CampaignDetailPage({
         {/* Campaign Details */}
         <CampaignDetails campaignId={params.id} />
 
-        {/* Donation Form Placeholder (Section 3) */}
-        <div
-          style={{
-            marginTop: "2rem",
-            padding: "3rem 2rem",
-            border: "2px dashed #d1d5db",
-            borderRadius: "1rem",
-            textAlign: "center",
-            backgroundColor: "#f9fafb",
-          }}
-        >
-          <p
-            style={{
-              fontSize: "1rem",
-              color: "#6b7280",
-              fontWeight: 500,
-            }}
-          >
-            💝 Donation form will be added in Section 3
-          </p>
-        </div>
+        {/* Donation Section */}
+        {campaign && (
+          <>
+            {isConnected ? (
+              <DonationForm
+                campaignId={campaignId}
+                isVerified={campaign.verified}
+                isActive={campaign.active}
+                onSuccess={refetch}
+              />
+            ) : (
+              <WalletPrompt />
+            )}
+          </>
+        )}
       </main>
     </>
   );

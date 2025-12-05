@@ -35,6 +35,8 @@ export default function Home() {
           maxWidth: "1280px",
           margin: "0 auto",
           padding: "4rem 1.5rem",
+          backgroundColor: "#ffffff",
+          minHeight: "calc(100vh - 73px)",
         }}
       >
         {/* Hero Section */}
@@ -48,9 +50,7 @@ export default function Home() {
             style={{
               fontSize: "clamp(2.5rem, 5vw, 4rem)",
               fontWeight: 800,
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              color: "#344e41",
               marginBottom: "1.5rem",
               lineHeight: 1.1,
               letterSpacing: "-0.03em",
@@ -64,7 +64,7 @@ export default function Home() {
           <p
             style={{
               fontSize: "1.25rem",
-              color: "#6b7280",
+              color: "#3a5a40",
               maxWidth: "42rem",
               margin: "0 auto 3rem",
               lineHeight: 1.7,
@@ -83,15 +83,15 @@ export default function Home() {
               fontWeight: 600,
               color: "#ffffff",
               background: buttonHovered
-                ? "linear-gradient(135deg, #5568d3 0%, #6941a0 100%)"
-                : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                ? "linear-gradient(135deg, #3a5a40 0%, #344e41 100%)"
+                : "linear-gradient(135deg, #588157 0%, #3a5a40 100%)",
               borderRadius: "0.75rem",
               textDecoration: "none",
               transition: "all 0.3s ease",
               transform: buttonHovered ? "translateY(-2px)" : "translateY(0)",
               boxShadow: buttonHovered
-                ? "0 20px 40px rgba(102, 126, 234, 0.4)"
-                : "0 10px 25px rgba(102, 126, 234, 0.2)",
+                ? "0 20px 40px rgba(88, 129, 87, 0.4)"
+                : "0 10px 25px rgba(88, 129, 87, 0.2)",
             }}
             onMouseEnter={() => setButtonHovered(true)}
             onMouseLeave={() => setButtonHovered(false)}
@@ -113,7 +113,7 @@ export default function Home() {
               key={index}
               style={{
                 backgroundColor: "#ffffff",
-                border: "1px solid #e5e7eb",
+                border: "1px solid #dad7cd",
                 borderRadius: "1rem",
                 padding: "2rem",
                 textAlign: "center",
@@ -124,7 +124,7 @@ export default function Home() {
                     : "translateY(0)",
                 boxShadow:
                   hoveredFeature === index
-                    ? "0 20px 40px rgba(0, 0, 0, 0.1)"
+                    ? "0 20px 40px rgba(88, 129, 87, 0.15)"
                     : "0 4px 6px rgba(0, 0, 0, 0.05)",
               }}
               onMouseEnter={() => setHoveredFeature(index)}
@@ -151,7 +151,7 @@ export default function Home() {
                 style={{
                   fontSize: "1.25rem",
                   fontWeight: 600,
-                  color: "#111827",
+                  color: "#344e41",
                   marginBottom: "0.75rem",
                 }}
               >
@@ -160,7 +160,7 @@ export default function Home() {
               <p
                 style={{
                   fontSize: "0.9375rem",
-                  color: "#6b7280",
+                  color: "#3a5a40",
                   lineHeight: 1.6,
                 }}
               >

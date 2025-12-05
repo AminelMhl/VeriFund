@@ -29,9 +29,7 @@ export default function CampaignsPage() {
             style={{
               fontSize: "2.5rem",
               fontWeight: 700,
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              color: "#344e41",
               marginBottom: "1rem",
               letterSpacing: "-0.02em",
             }}
@@ -41,7 +39,7 @@ export default function CampaignsPage() {
           <p
             style={{
               fontSize: "1.125rem",
-              color: "#6b7280",
+              color: "#3a5a40",
               maxWidth: "42rem",
               margin: "0 auto",
               lineHeight: 1.7,

@@ -3,7 +3,7 @@
 import { useCampaign } from "@/hooks/useCampaigns";
 import StatusBadge from "./StatusBadge";
 import ProgressBar from "./ProgressBar";
-import LoadingSpinner from "./LoadingSpinner";
+import CampaignDetailsSkeleton from "./CampaignDetailsSkeleton";
 import ErrorMessage from "./ErrorMessage";
 import { truncateAddress, formatDate } from "@/lib/utils";
 
@@ -18,7 +18,7 @@ export default function CampaignDetails({ campaignId }: CampaignDetailsProps) {
 
   // Loading State
   if (isLoading) {
-    return <LoadingSpinner message="Loading campaign details..." />;
+    return <CampaignDetailsSkeleton />;
   }
 
   // Error State
@@ -43,7 +43,7 @@ export default function CampaignDetails({ campaignId }: CampaignDetailsProps) {
     <div
       style={{
         backgroundColor: "#ffffff",
-        border: "1px solid #e5e7eb",
+        border: "1px solid #dad7cd",
         borderRadius: "1rem",
         padding: "2rem",
         display: "flex",
@@ -59,7 +59,7 @@ export default function CampaignDetails({ campaignId }: CampaignDetailsProps) {
           style={{
             fontSize: "2rem",
             fontWeight: 700,
-            color: "#111827",
+            color: "#344e41",
             marginTop: "1rem",
             marginBottom: "0.75rem",
           lineHeight: 1.2,
@@ -72,7 +72,7 @@ export default function CampaignDetails({ campaignId }: CampaignDetailsProps) {
             flexWrap: "wrap",
             gap: "1rem",
             fontSize: "0.875rem",
-            color: "#6b7280",
+            color: "#3a5a40",
           }}
         >
           <div>
@@ -95,7 +95,7 @@ export default function CampaignDetails({ campaignId }: CampaignDetailsProps) {
           style={{
             fontSize: "1.25rem",
             fontWeight: 600,
-            color: "#111827",
+            color: "#344e41",
             marginBottom: "0.75rem",
           }}
         >
@@ -104,7 +104,7 @@ export default function CampaignDetails({ campaignId }: CampaignDetailsProps) {
         <p
           style={{
             fontSize: "1rem",
-            color: "#4b5563",
+            color: "#3a5a40",
             lineHeight: 1.7,
             whiteSpace: "pre-wrap",
           }}
@@ -116,8 +116,8 @@ export default function CampaignDetails({ campaignId }: CampaignDetailsProps) {
       {/* Fundraising Progress Section */}
       <div
         style={{
-          backgroundColor: "#f9fafb",
-          border: "1px solid #e5e7eb",
+          backgroundColor: "#fafaf9",
+          border: "1px solid #dad7cd",
           borderRadius: "0.75rem",
           padding: "1.5rem",
         }}
@@ -126,7 +126,7 @@ export default function CampaignDetails({ campaignId }: CampaignDetailsProps) {
           style={{
             fontSize: "1.25rem",
             fontWeight: 600,
-            color: "#111827",
+            color: "#344e41",
             marginBottom: "1rem",
           }}
         >
@@ -142,28 +142,28 @@ export default function CampaignDetails({ campaignId }: CampaignDetailsProps) {
           }}
         >
           <div>
-            <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.25rem" }}>
+            <div style={{ fontSize: "0.875rem", color: "#a3b18a", marginBottom: "0.25rem" }}>
               Raised
             </div>
-            <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#10b981" }}>
+            <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#588157" }}>
               {campaign.raisedETH} ETH
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.25rem" }}>
+            <div style={{ fontSize: "0.875rem", color: "#a3b18a", marginBottom: "0.25rem" }}>
               Goal
             </div>
-            <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#111827" }}>
+            <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#344e41" }}>
               {campaign.goalETH} ETH
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.25rem" }}>
+            <div style={{ fontSize: "0.875rem", color: "#a3b18a", marginBottom: "0.25rem" }}>
               Progress
             </div>
-            <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#667eea" }}>
+            <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#3a5a40" }}>
               {campaign.progress.toFixed(1)}%
             </div>
           </div>

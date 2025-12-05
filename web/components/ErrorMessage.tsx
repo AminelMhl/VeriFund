@@ -23,11 +23,19 @@ export default function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
       {/* Warning Icon */}
       <div
         style={{
-          fontSize: "2.5rem",
-          lineHeight: 1,
+          width: "3rem",
+          height: "3rem",
+          borderRadius: "50%",
+          backgroundColor: "#fee2e2",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "1.5rem",
+          color: "#dc2626",
+          fontWeight: 700,
         }}
       >
-        ⚠️
+        !
       </div>
 
       {/* Error Message */}
@@ -59,20 +67,20 @@ export default function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
           onClick={onRetry}
           style={{
             padding: "0.625rem 1.25rem",
-            backgroundColor: "#dc2626",
+            background: "linear-gradient(135deg, #588157 0%, #3a5a40 100%)",
             color: "#ffffff",
             fontSize: "0.875rem",
             fontWeight: 600,
             borderRadius: "0.5rem",
             border: "none",
             cursor: "pointer",
-            transition: "background-color 0.2s ease",
+            transition: "all 0.2s ease",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#b91c1c";
+            e.currentTarget.style.background = "linear-gradient(135deg, #3a5a40 0%, #344e41 100%)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#dc2626";
+            e.currentTarget.style.background = "linear-gradient(135deg, #588157 0%, #3a5a40 100%)";
           }}
         >
           Try Again

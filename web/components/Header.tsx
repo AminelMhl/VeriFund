@@ -12,7 +12,7 @@ export default function Header() {
         zIndex: 50,
         backgroundColor: "rgba(255, 255, 255, 0.8)",
         backdropFilter: "blur(12px)",
-        borderBottom: "1px solid #e5e7eb",
+        borderBottom: "1px solid #dad7cd",
       }}
     >
       <nav
@@ -32,9 +32,7 @@ export default function Header() {
           style={{
             fontSize: "1.5rem",
             fontWeight: 700,
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            color: "#344e41",
             textDecoration: "none",
             letterSpacing: "-0.02em",
           }}
@@ -54,17 +52,17 @@ export default function Header() {
           <Link
             href="/"
             style={{
-              color: "#4b5563",
+              color: "#3a5a40",
               textDecoration: "none",
               fontSize: "0.9375rem",
               fontWeight: 500,
               transition: "color 0.2s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#667eea";
+              e.currentTarget.style.color = "#588157";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#4b5563";
+              e.currentTarget.style.color = "#3a5a40";
             }}
           >
             Home
@@ -72,17 +70,17 @@ export default function Header() {
           <Link
             href="/campaigns"
             style={{
-              color: "#4b5563",
+              color: "#3a5a40",
               textDecoration: "none",
               fontSize: "0.9375rem",
               fontWeight: 500,
               transition: "color 0.2s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#667eea";
+              e.currentTarget.style.color = "#588157";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#4b5563";
+              e.currentTarget.style.color = "#3a5a40";
             }}
           >
             Campaigns

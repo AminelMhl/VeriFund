@@ -51,7 +51,9 @@ export interface UseCampaignReturn {
 export interface UseDonateReturn {
   donate: (campaignId: bigint, amountETH: string) => void;
   isPending: boolean;
+  isConfirming: boolean;
   isSuccess: boolean;
-  error: Error | null;
+  error: string | null;
   hash: `0x${string}` | undefined;
+  reset: () => void;
 }

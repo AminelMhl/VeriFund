@@ -24,8 +24,8 @@ export default function StatusBadge({ verified, active }: StatusBadgeProps) {
           fontSize: "0.75rem",
           fontWeight: 600,
           letterSpacing: "0.025em",
-          backgroundColor: verified ? "#dcfce7" : "#fed7aa",
-          color: verified ? "#15803d" : "#c2410c",
+          backgroundColor: verified ? "#588157" : "#fef3c7",
+          color: verified ? "#ffffff" : "#3a5a40",
         }}
       >
         <span style={{ fontSize: "0.875rem" }}>{verified ? "✓" : "⏳"}</span>
@@ -42,8 +42,8 @@ export default function StatusBadge({ verified, active }: StatusBadgeProps) {
           fontSize: "0.75rem",
           fontWeight: 600,
           letterSpacing: "0.025em",
-          backgroundColor: active ? "#dbeafe" : "#f3f4f6",
-          color: active ? "#1e40af" : "#6b7280",
+          backgroundColor: active ? "#a3b18a" : "#dad7cd",
+          color: active ? "#ffffff" : "#344e41",
         }}
       >
         {active ? "Active" : "Inactive"}

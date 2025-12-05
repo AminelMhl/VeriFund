@@ -23,8 +23,8 @@ export default function LoadingSpinner({
         style={{
           width: "2.5rem",
           height: "2.5rem",
-          border: "3px solid #e5e7eb",
-          borderTopColor: "#667eea",
+          border: "3px solid #dad7cd",
+          borderTopColor: "#588157",
           borderRadius: "50%",
           animation: "spin 0.8s linear infinite",
         }}
@@ -34,7 +34,7 @@ export default function LoadingSpinner({
       <p
         style={{
           fontSize: "0.9375rem",
-          color: "#6b7280",
+          color: "#3a5a40",
           fontWeight: 500,
         }}
       >

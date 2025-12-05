@@ -10,12 +10,12 @@ export default function ProgressBar({
   // Cap progress at 100% for display
   const displayProgress = Math.min(progress, 100);
 
-  // Dynamic color based on progress
+  // Dynamic color based on progress (using earth-tone palette)
   const getColor = (prog: number): string => {
-    if (prog >= 75) return "#10b981"; // Green
-    if (prog >= 50) return "#3b82f6"; // Blue
-    if (prog >= 25) return "#f59e0b"; // Amber
-    return "#ef4444"; // Red
+    if (prog >= 75) return "#588157"; // Fern (green)
+    if (prog >= 50) return "#3a5a40"; // Hunter green
+    if (prog >= 25) return "#a3b18a"; // Dry sage
+    return "#dad7cd"; // Dust grey
   };
 
   const color = getColor(displayProgress);
@@ -28,7 +28,7 @@ export default function ProgressBar({
           position: "relative",
           width: "100%",
           height: "0.5rem",
-          backgroundColor: "#f3f4f6",
+          backgroundColor: "#dad7cd",
           borderRadius: "9999px",
           overflow: "hidden",
         }}
@@ -55,7 +55,7 @@ export default function ProgressBar({
             marginTop: "0.375rem",
             fontSize: "0.75rem",
             fontWeight: 600,
-            color: "#6b7280",
+            color: "#3a5a40",
             textAlign: "right",
           }}
         >

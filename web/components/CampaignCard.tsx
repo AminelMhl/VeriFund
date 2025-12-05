@@ -12,7 +12,7 @@ export default function CampaignCard({ campaign }: CampaignCardProps) {
     <div
       style={{
         backgroundColor: "#ffffff",
-        border: "1px solid #e5e7eb",
+        border: "1px solid #dad7cd",
         borderRadius: "1rem",
         padding: "1.5rem",
         display: "flex",
@@ -23,7 +23,7 @@ export default function CampaignCard({ campaign }: CampaignCardProps) {
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = "translateY(-4px)";
-        e.currentTarget.style.boxShadow = "0 20px 40px rgba(0, 0, 0, 0.1)";
+        e.currentTarget.style.boxShadow = "0 20px 40px rgba(163, 177, 138, 0.2)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = "translateY(0)";
@@ -38,7 +38,7 @@ export default function CampaignCard({ campaign }: CampaignCardProps) {
         style={{
           fontSize: "1.25rem",
           fontWeight: 600,
-          color: "#111827",
+          color: "#344e41",
           lineHeight: 1.3,
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -55,7 +55,7 @@ export default function CampaignCard({ campaign }: CampaignCardProps) {
       <p
         style={{
           fontSize: "0.875rem",
-          color: "#6b7280",
+          color: "#3a5a40",
           lineHeight: 1.6,
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -78,14 +78,14 @@ export default function CampaignCard({ campaign }: CampaignCardProps) {
         }}
       >
         <div>
-          <div style={{ color: "#9ca3af", marginBottom: "0.25rem" }}>Raised</div>
-          <div style={{ fontWeight: 600, color: "#111827" }}>
+          <div style={{ color: "#a3b18a", marginBottom: "0.25rem" }}>Raised</div>
+          <div style={{ fontWeight: 600, color: "#344e41" }}>
             {campaign.raisedETH} ETH
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ color: "#9ca3af", marginBottom: "0.25rem" }}>Goal</div>
-          <div style={{ fontWeight: 600, color: "#111827" }}>
+          <div style={{ color: "#a3b18a", marginBottom: "0.25rem" }}>Goal</div>
+          <div style={{ fontWeight: 600, color: "#344e41" }}>
             {campaign.goalETH} ETH
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function CampaignCard({ campaign }: CampaignCardProps) {
           marginTop: "0.5rem",
           padding: "0.75rem",
           textAlign: "center",
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          background: "linear-gradient(135deg, #588157 0%, #3a5a40 100%)",
           color: "#ffffff",
           fontSize: "0.9375rem",
           fontWeight: 600,

@@ -28,10 +28,11 @@ export default function EmptyState({
         style={{
           fontSize: "4rem",
           lineHeight: 1,
-          opacity: 0.5,
+          opacity: 0.3,
+          color: "#a3b18a",
         }}
       >
-        📭
+        ○
       </div>
 
       {/* Title */}
@@ -40,7 +41,7 @@ export default function EmptyState({
           style={{
             fontSize: "1.25rem",
             fontWeight: 600,
-            color: "#1f2937",
+            color: "#344e41",
             marginBottom: "0.5rem",
           }}
         >
@@ -51,7 +52,7 @@ export default function EmptyState({
         <p
           style={{
             fontSize: "0.9375rem",
-            color: "#6b7280",
+            color: "#3a5a40",
             lineHeight: 1.6,
             maxWidth: "28rem",
           }}
@@ -66,7 +67,7 @@ export default function EmptyState({
           onClick={onAction}
           style={{
             padding: "0.75rem 1.5rem",
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            background: "linear-gradient(135deg, #588157 0%, #3a5a40 100%)",
             color: "#ffffff",
             fontSize: "0.9375rem",
             fontWeight: 600,
@@ -77,7 +78,7 @@ export default function EmptyState({
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = "0 10px 20px rgba(102, 126, 234, 0.3)";
+            e.currentTarget.style.boxShadow = "0 10px 20px rgba(88, 129, 87, 0.3)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "translateY(0)";
