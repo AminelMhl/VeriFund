@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useWriteContract } from "wagmi";
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from "../../lib/contract";
+import Header from "@/components/Header";
 
 export default function CreateCampaign() {
   const [title, setTitle] = useState("");
@@ -50,210 +51,101 @@ export default function CreateCampaign() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 24,
-        background: "radial-gradient(circle at top, #0f172a 0, #020617 55%)",
-        color: "#e5e7eb",
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          padding: 24,
-          borderRadius: 16,
-          background:
-            "linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.92))",
-          boxShadow:
-            "0 18px 45px rgba(15, 23, 42, 0.9), 0 0 0 1px rgba(148, 163, 184, 0.25)",
-        }}
-      >
-        <div style={{ marginBottom: 20 }}>
-          <h1
-            style={{
-              fontSize: 28,
-              marginBottom: 6,
-              fontWeight: 600,
-              letterSpacing: 0.4,
-              color: "#f9fafb",
-            }}
-          >
-            Create New Campaign
-          </h1>
-          <p
-            style={{
-              fontSize: 14,
-              color: "#94a3b8",
-            }}
-          >
-            Define your fundraising goal and tell donors what your campaign is
-            about.
-          </p>
-        </div>
+    <>
+      <Header />
+      <main style={{ maxWidth: "800px", margin: "0 auto", padding: "3rem 1.5rem", backgroundColor: "#ffffff", minHeight: "calc(100vh - 73px)" }}>
+        <h1 style={{ fontSize: "2.5rem", fontWeight: 700, color: "#344e41", marginBottom: "0.5rem" }}>Create New Campaign</h1>
+        <p style={{ fontSize: "1rem", color: "#3a5a40", marginBottom: "2rem", lineHeight: 1.6 }}>Start a verified charity campaign on the blockchain.</p>
 
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 14,
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#cbd5f5",
-              }}
-            >
-              Title
-            </label>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div>
+            <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, color: "#344e41", marginBottom: "0.5rem" }}>Campaign Title</label>
             <input
-              placeholder="Education fund, disaster relief..."
+              placeholder="Enter campaign title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              required
               style={{
-                padding: "9px 11px",
-                borderRadius: 10,
-                border: "1px solid rgba(148, 163, 184, 0.4)",
-                backgroundColor: "#020617",
-                color: "#e5e7eb",
-                fontSize: 14,
+                width: "100%",
+                padding: "0.75rem 1rem",
+                fontSize: "1rem",
+                border: "1px solid #dad7cd",
+                borderRadius: "0.5rem",
                 outline: "none",
+                transition: "border-color 0.2s",
               }}
             />
           </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div>
             <label
               style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#cbd5f5",
+                display: "block",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                color: "#344e41",
+                marginBottom: "0.5rem",
               }}
             >
-              Description
+              Campaign Description
             </label>
             <textarea
-              placeholder="Describe how the funds will be used and who they help."
+              placeholder="Describe the purpose of this campaign, who it helps, and how the funds will be used."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              required
               rows={4}
               style={{
-                padding: "9px 11px",
-                borderRadius: 10,
-                border: "1px solid rgba(148, 163, 184, 0.4)",
-                backgroundColor: "#020617",
-                color: "#e5e7eb",
-                fontSize: 14,
-                resize: "vertical",
+                width: "100%",
+                padding: "0.75rem 1rem",
+                fontSize: "1rem",
+                border: "1px solid #dad7cd",
+                borderRadius: "0.5rem",
                 outline: "none",
+                resize: "vertical",
+                transition: "border-color 0.2s",
               }}
             />
           </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#cbd5f5",
-              }}
-            >
-              Goal (ETH)
-            </label>
+          <div>
+            <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 600, color: "#344e41", marginBottom: "0.5rem" }}>Goal Amount (ETH)</label>
             <input
-              placeholder="e.g. 5"
+              placeholder="0.00"
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               type="number"
               step="0.01"
+              min="0.01"
+              required
               style={{
-                padding: "9px 11px",
-                borderRadius: 10,
-                border: "1px solid rgba(148, 163, 184, 0.4)",
-                backgroundColor: "#020617",
-                color: "#e5e7eb",
-                fontSize: 14,
+                width: "100%",
+                padding: "0.75rem 1rem",
+                fontSize: "1rem",
+                border: "1px solid #dad7cd",
+                borderRadius: "0.5rem",
                 outline: "none",
+                transition: "border-color 0.2s",
               }}
             />
-            <span
-              style={{
-                fontSize: 11,
-                color: "#64748b",
-              }}
-            >
-              This will be converted to wei on-chain.
-            </span>
           </div>
-
-          <button
-            type="submit"
-            disabled={isPending}
+          <button 
+            type="submit" 
+            disabled={isPending || !title || !description || !goal}
             style={{
-              marginTop: 8,
-              padding: "9px 12px",
-              borderRadius: 999,
+              padding: "1rem 2rem",
+              fontSize: "1rem",
+              fontWeight: 600,
+              color: "#ffffff",
+              background: isPending || !title || !description || !goal ? "#dad7cd" : "linear-gradient(135deg, #588157 0%, #3a5a40 100%)",
               border: "none",
-              fontSize: 14,
-              fontWeight: 500,
-              color: "#0f172a",
-              background:
-                "linear-gradient(135deg, #22c55e 0%, #a3e635 45%, #22c55e 100%)",
-              cursor: isPending ? "default" : "pointer",
-              opacity: isPending ? 0.8 : 1,
-              boxShadow: "0 10px 25px rgba(34, 197, 94, 0.35)",
+              borderRadius: "0.5rem",
+              cursor: isPending || !title || !description || !goal ? "not-allowed" : "pointer",
+              transition: "all 0.3s ease",
             }}
           >
-            {isPending ? "Creating campaign..." : "Create campaign"}
+            {isPending ? "Creating..." : "Create Campaign"}
           </button>
         </form>
-
-        {errorMessage && (
-          <p
-            style={{
-              color: "#f97373",
-              marginTop: 14,
-              fontSize: 13,
-            }}
-          >
-            {errorMessage}
-          </p>
-        )}
-
-        {error && (
-          <p
-            style={{
-              color: "#f97373",
-              marginTop: 14,
-              fontSize: 13,
-            }}
-          >
-            {(error as Error).message || "Transaction failed."}
-          </p>
-        )}
-
-        {data && !isPending && (
-          <p
-            style={{
-              color: "#4ade80",
-              marginTop: 14,
-              fontSize: 13,
-            }}
-          >
-            Campaign creation transaction sent. Tx hash:{" "}
-            <code style={{ color: "#a5b4fc" }}>{data as string}</code>
-          </p>
-        )}
-      </div>
-    </div>
+      </main>
+    </>
   );
 }

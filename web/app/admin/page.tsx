@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useAccount,
   useReadContract,
@@ -8,6 +8,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from "../../lib/contract";
+import Header from "@/components/Header";
 
 const METADATA_PREFIX = "data:application/json,";
 
@@ -90,7 +91,12 @@ export default function AdminDashboard() {
     error: writeError,
   } = useWriteContract();
 
+  const [isClient, setIsClient] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const isAdmin =
     address &&
@@ -120,20 +126,59 @@ export default function AdminDashboard() {
   const loading =
     isLoadingOwner || isLoadingCount || isLoadingCampaigns || isWriting;
 
+  if (!isClient) {
+    return (
+      <>
+        <Header />
+        <main
+          style={{
+            maxWidth: "1080px",
+            margin: "0 auto",
+            padding: "3rem 1.5rem",
+            backgroundColor: "#ffffff",
+            minHeight: "calc(100vh - 73px)",
+            fontFamily:
+              "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+            color: "#1f2933",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: 26,
+              marginBottom: 8,
+              fontWeight: 600,
+              letterSpacing: 0.5,
+              color: "#344e41",
+            }}
+          >
+            Admin Dashboard
+          </h1>
+          <p
+            style={{
+              fontSize: 14,
+              color: "#6c757d",
+            }}
+          >
+            Loading admin dashboard...
+          </p>
+        </main>
+      </>
+    );
+  }
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        padding: 24,
-        background: "radial-gradient(circle at top, #020617 0, #020617 55%)",
-        color: "#e5e7eb",
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-      }}
-    >
-      <div
+    <>
+      <Header />
+      <main
         style={{
-          maxWidth: 1080,
+          maxWidth: "1080px",
           margin: "0 auto",
+          padding: "3rem 1.5rem",
+          backgroundColor: "#ffffff",
+          minHeight: "calc(100vh - 73px)",
+          fontFamily:
+            "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+          color: "#1f2933",
         }}
       >
         <header
@@ -172,17 +217,17 @@ export default function AdminDashboard() {
             style={{
               padding: 10,
               borderRadius: 12,
-              border: "1px solid rgba(148, 163, 184, 0.4)",
-              backgroundColor: "rgba(15, 23, 42, 0.98)",
-              minWidth: 220,
+              border: "1px solid #dad7cd",
+              backgroundColor: "#f6f7f2",
+              minWidth: 260,
             }}
           >
-            {address && ownerAddress && (
+            {address && (
               <>
                 <div
                   style={{
-                    fontSize: 11,
-                    color: "#64748b",
+                    fontSize: 12,
+                    color: "#6c757d",
                     marginBottom: 4,
                   }}
                 >
@@ -190,17 +235,18 @@ export default function AdminDashboard() {
                 </div>
                 <div
                   style={{
-                    fontSize: 12,
-                    color: "#e5e7eb",
+                    fontSize: 13,
+                    color: "#1f2933",
                     wordBreak: "break-all",
                   }}
                 >
                   <code>{address}</code>
                 </div>
+
                 <div
                   style={{
-                    fontSize: 11,
-                    color: "#64748b",
+                    fontSize: 12,
+                    color: "#6c757d",
                     marginTop: 8,
                   }}
                 >
@@ -208,13 +254,22 @@ export default function AdminDashboard() {
                 </div>
                 <div
                   style={{
-                    fontSize: 12,
-                    color: "#e5e7eb",
+                    fontSize: 13,
+                    color: "#1f2933",
                     wordBreak: "break-all",
                   }}
                 >
-                  <code>{ownerAddress as string}</code>
+                  {typeof ownerAddress === "string" ? (
+                    <code>{ownerAddress}</code>
+                  ) : isLoadingOwner ? (
+                    "Loading owner from contract..."
+                  ) : ownerError ? (
+                    "Failed to load owner (is node running?)."
+                  ) : (
+                    "Owner not available."
+                  )}
                 </div>
+
                 <div
                   style={{
                     marginTop: 10,
@@ -229,12 +284,12 @@ export default function AdminDashboard() {
                       width: 8,
                       height: 8,
                       borderRadius: "50%",
-                      backgroundColor: isAdmin ? "#22c55e" : "#f97373",
+                      backgroundColor: isAdmin ? "#2e7d32" : "#f97373",
                     }}
                   />
                   <span
                     style={{
-                      color: isAdmin ? "#bbf7d0" : "#fecaca",
+                      color: isAdmin ? "#2e7d32" : "#b91c1c",
                       fontWeight: 500,
                     }}
                   >
@@ -246,7 +301,7 @@ export default function AdminDashboard() {
             {!address && (
               <p
                 style={{
-                  color: "#94a3b8",
+                  color: "#6c757d",
                   fontSize: 13,
                 }}
               >
@@ -260,8 +315,8 @@ export default function AdminDashboard() {
         {loading && (
           <p
             style={{
-              fontSize: 13,
-              color: "#e5e7eb",
+              fontSize: 14,
+              color: "#3a5a40",
               marginBottom: 12,
             }}
           >
@@ -320,7 +375,7 @@ export default function AdminDashboard() {
         {txHash && !isWriting && (
           <p
             style={{
-              color: "#4ade80",
+              color: "#15803d",
               marginBottom: 16,
               fontSize: 13,
             }}
@@ -339,7 +394,7 @@ export default function AdminDashboard() {
             marginBottom: 10,
             fontSize: 16,
             fontWeight: 600,
-            color: "#e5e7eb",
+            color: "#344e41",
           }}
         >
           Campaigns
@@ -349,7 +404,7 @@ export default function AdminDashboard() {
           <p
             style={{
               fontSize: 13,
-              color: "#94a3b8",
+              color: "#6c757d",
             }}
           >
             No campaigns created yet.
@@ -364,9 +419,8 @@ export default function AdminDashboard() {
             marginTop: 4,
           }}
         >
-          {campaignsData &&
-            campaignsData.map((item, index) => {
-              const campaign = item as RawCampaign;
+          {(campaignsData as RawCampaign[] | undefined)?.map(
+            (campaign, index) => {
               const [id, owner, metadataURI, goal, raised, verified, active] =
                 campaign;
 
@@ -386,8 +440,8 @@ export default function AdminDashboard() {
                   key={id.toString() + "-" + index}
                   style={{
                     borderRadius: 14,
-                    border: "1px solid rgba(148, 163, 184, 0.35)",
-                    backgroundColor: "rgba(15, 23, 42, 0.98)",
+                    border: "1px solid #dad7cd",
+                    backgroundColor: "#ffffff",
                     padding: 14,
                     display: "flex",
                     flexDirection: "column",
@@ -406,7 +460,7 @@ export default function AdminDashboard() {
                       style={{
                         fontSize: 14,
                         fontWeight: 600,
-                        color: "#e5e7eb",
+                        color: "#344e41",
                       }}
                     >
                       Campaign #{id.toString()}
@@ -418,12 +472,12 @@ export default function AdminDashboard() {
                           padding: "2px 8px",
                           borderRadius: 999,
                           backgroundColor: verified
-                            ? "rgba(34,197,94,0.16)"
-                            : "rgba(251,191,36,0.12)",
-                          color: verified ? "#4ade80" : "#facc15",
+                            ? "rgba(22,163,74,0.08)"
+                            : "rgba(252,211,77,0.12)",
+                          color: verified ? "#166534" : "#b45309",
                           border: verified
-                            ? "1px solid rgba(34,197,94,0.35)"
-                            : "1px solid rgba(250,204,21,0.35)",
+                            ? "1px solid rgba(22,163,74,0.35)"
+                            : "1px solid rgba(252,211,77,0.35)",
                         }}
                       >
                         {verified ? "Verified" : "Unverified"}
@@ -434,12 +488,12 @@ export default function AdminDashboard() {
                           padding: "2px 8px",
                           borderRadius: 999,
                           backgroundColor: active
-                            ? "rgba(59,130,246,0.15)"
-                            : "rgba(148,163,184,0.16)",
-                          color: active ? "#60a5fa" : "#cbd5f5",
+                            ? "rgba(59,130,246,0.08)"
+                            : "rgba(148,163,184,0.12)",
+                          color: active ? "#1d4ed8" : "#4b5563",
                           border: active
-                            ? "1px solid rgba(59,130,246,0.4)"
-                            : "1px solid rgba(148,163,184,0.5)",
+                            ? "1px solid rgba(59,130,246,0.3)"
+                            : "1px solid rgba(148,163,184,0.4)",
                         }}
                       >
                         {active ? "Active" : "Closed"}
@@ -454,7 +508,7 @@ export default function AdminDashboard() {
                           style={{
                             fontSize: 13,
                             fontWeight: 500,
-                            color: "#f9fafb",
+                            color: "#111827",
                           }}
                         >
                           {metadata.title}
@@ -464,7 +518,7 @@ export default function AdminDashboard() {
                         <p
                           style={{
                             fontSize: 12,
-                            color: "#94a3b8",
+                            color: "#6c757d",
                             marginTop: 2,
                           }}
                         >
@@ -478,7 +532,7 @@ export default function AdminDashboard() {
                     <p
                       style={{
                         fontSize: 11,
-                        color: "#94a3b8",
+                        color: "#6c757d",
                       }}
                     >
                       <strong>Metadata URI:</strong> {metadataURI}
@@ -497,7 +551,7 @@ export default function AdminDashboard() {
                       <div
                         style={{
                           fontSize: 11,
-                          color: "#64748b",
+                          color: "#6c757d",
                         }}
                       >
                         Goal
@@ -505,7 +559,7 @@ export default function AdminDashboard() {
                       <div
                         style={{
                           fontSize: 13,
-                          color: "#e5e7eb",
+                          color: "#111827",
                         }}
                       >
                         {goalEth} ETH
@@ -515,7 +569,7 @@ export default function AdminDashboard() {
                       <div
                         style={{
                           fontSize: 11,
-                          color: "#64748b",
+                          color: "#6c757d",
                         }}
                       >
                         Raised
@@ -523,7 +577,7 @@ export default function AdminDashboard() {
                       <div
                         style={{
                           fontSize: 13,
-                          color: "#22c55e",
+                          color: "#15803d",
                         }}
                       >
                         {raisedEth} ETH
@@ -535,7 +589,7 @@ export default function AdminDashboard() {
                     style={{
                       marginTop: 4,
                       fontSize: 11,
-                      color: "#64748b",
+                      color: "#6c757d",
                       wordBreak: "break-all",
                     }}
                   >
@@ -562,9 +616,9 @@ export default function AdminDashboard() {
                             border: "none",
                             fontSize: 12,
                             fontWeight: 500,
-                            color: "#0f172a",
+                            color: "#ffffff",
                             background:
-                              "linear-gradient(135deg, #22c55e, #a3e635)",
+                              "linear-gradient(135deg, #588157 0%, #3a5a40 100%)",
                             cursor: isWriting ? "default" : "pointer",
                             opacity:
                               isWriting && lastAction?.startsWith("approve-")
@@ -588,8 +642,8 @@ export default function AdminDashboard() {
                             border: "1px solid rgba(239,68,68,0.75)",
                             fontSize: 12,
                             fontWeight: 500,
-                            color: "#fecaca",
-                            backgroundColor: "rgba(30,64,175,0.15)",
+                            color: "#b91c1c",
+                            backgroundColor: "#fef2f2",
                             cursor: isWriting ? "default" : "pointer",
                             opacity:
                               isWriting && lastAction?.startsWith("close-")
@@ -606,9 +660,10 @@ export default function AdminDashboard() {
                   )}
                 </div>
               );
-            })}
+            }
+          )}
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }

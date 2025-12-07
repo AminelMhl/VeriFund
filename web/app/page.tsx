@@ -1,174 +1,213 @@
 "use client";
-
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import Header from "@/components/Header";
 
 export default function Home() {
-  const router = useRouter();
+  const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
+  const [buttonHovered, setButtonHovered] = useState(false);
+  const [createButtonHovered, setCreateButtonHovered] = useState(false);
+
+  const features = [
+    {
+      icon: "/secure.png",
+      title: "Blockchain Security",
+      description:
+        "Every donation is recorded on the blockchain, ensuring complete transparency and immutability.",
+    },
+    {
+      icon: "/verified.png",
+      title: "Verified Campaigns",
+      description:
+        "All campaigns are verified to ensure legitimacy and protect donors from fraud.",
+    },
+    {
+      icon: "/tracking.png",
+      title: "Real-time Tracking",
+      description:
+        "Track your donations in real-time and see exactly how funds are being utilized.",
+    },
+  ];
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 24,
-        background: "radial-gradient(circle at top, #020617 0, #020617 55%)",
-        color: "#e5e7eb",
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-      }}
-    >
-      <div
+    <>
+      <Header />
+      <main
         style={{
-          width: "100%",
-          maxWidth: 960,
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr)",
-          gap: 28,
-          alignItems: "center",
+          maxWidth: "1280px",
+          margin: "0 auto",
+          padding: "4rem 1.5rem",
+          backgroundColor: "#ffffff",
+          minHeight: "calc(100vh - 73px)",
         }}
       >
-        <div>
+        {/* Hero Section */}
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: "5rem",
+          }}
+        >
           <h1
             style={{
-              fontSize: 32,
-              marginBottom: 10,
-              fontWeight: 700,
-              letterSpacing: 0.6,
-              color: "#f9fafb",
+              fontSize: "clamp(2.5rem, 5vw, 4rem)",
+              fontWeight: 800,
+              color: "#344e41",
+              marginBottom: "1.5rem",
+              lineHeight: 1.1,
+              letterSpacing: "-0.03em",
             }}
           >
-            Welcome to VeriFund
+            Transparent Charity
+            <br />
+            Powered by Blockchain
           </h1>
+
           <p
             style={{
-              fontSize: 14,
-              color: "#94a3b8",
-              maxWidth: 440,
+              fontSize: "1.25rem",
+              color: "#3a5a40",
+              maxWidth: "42rem",
+              margin: "0 auto 3rem",
+              lineHeight: 1.7,
             }}
           >
-            A transparent on-chain donation platform. Connect your wallet and
-            choose whether you want to support campaigns as a donor or create
-            your own verified fundraising campaign.
+            Make a difference with confidence. Every donation is verified,
+            tracked, and transparent on the blockchain.
           </p>
 
           <div
             style={{
-              marginTop: 18,
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.75rem",
+              alignItems: "center",
             }}
           >
-            <ConnectButton />
+            <Link
+              href="/campaigns"
+              style={{
+                display: "inline-block",
+                padding: "1rem 2.5rem",
+                fontSize: "1.125rem",
+                fontWeight: 600,
+                color: "#ffffff",
+                background: buttonHovered
+                  ? "linear-gradient(135deg, #3a5a40 0%, #344e41 100%)"
+                  : "linear-gradient(135deg, #588157 0%, #3a5a40 100%)",
+                borderRadius: "0.75rem",
+                textDecoration: "none",
+                transition: "all 0.3s ease",
+                transform: buttonHovered ? "translateY(-2px)" : "translateY(0)",
+                boxShadow: buttonHovered
+                  ? "0 20px 40px rgba(88, 129, 87, 0.4)"
+                  : "0 10px 25px rgba(88, 129, 87, 0.2)",
+              }}
+              onMouseEnter={() => setButtonHovered(true)}
+              onMouseLeave={() => setButtonHovered(false)}
+            >
+              Browse Campaigns
+            </Link>
+            <Link
+              href="/create"
+              style={{
+                display: "inline-block",
+                padding: "1rem 2.5rem",
+                fontSize: "1.125rem",
+                fontWeight: 600,
+                color: "#ffffff",
+                background: createButtonHovered
+                  ? "linear-gradient(135deg, #f97316 0%, #c2410c 100%)"
+                  : "linear-gradient(135deg, #fbbf24 0%, #f97316 100%)",
+                borderRadius: "0.75rem",
+                textDecoration: "none",
+                transition: "all 0.3s ease",
+                transform: createButtonHovered
+                  ? "translateY(-2px)"
+                  : "translateY(0)",
+                boxShadow: createButtonHovered
+                  ? "0 20px 40px rgba(234, 179, 8, 0.4)"
+                  : "0 10px 25px rgba(234, 179, 8, 0.2)",
+              }}
+              onMouseEnter={() => setCreateButtonHovered(true)}
+              onMouseLeave={() => setCreateButtonHovered(false)}
+            >
+              Create Campaign
+            </Link>
           </div>
         </div>
 
+        {/* Features Section */}
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "2rem",
           }}
         >
-          <div
-            style={{
-              padding: 16,
-              borderRadius: 16,
-              border: "1px solid rgba(148,163,184,0.45)",
-              backgroundColor: "rgba(15,23,42,0.96)",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            <h2
+          {features.map((feature, index) => (
+            <div
+              key={index}
               style={{
-                fontSize: 16,
-                fontWeight: 600,
-                color: "#e5e7eb",
+                backgroundColor: "#ffffff",
+                border: "1px solid #dad7cd",
+                borderRadius: "1rem",
+                padding: "2rem",
+                textAlign: "center",
+                transition: "all 0.3s ease",
+                transform:
+                  hoveredFeature === index
+                    ? "translateY(-8px)"
+                    : "translateY(0)",
+                boxShadow:
+                  hoveredFeature === index
+                    ? "0 20px 40px rgba(88, 129, 87, 0.15)"
+                    : "0 4px 6px rgba(0, 0, 0, 0.05)",
               }}
+              onMouseEnter={() => setHoveredFeature(index)}
+              onMouseLeave={() => setHoveredFeature(null)}
             >
-              I&apos;m a donor
-            </h2>
-            <p
-              style={{
-                fontSize: 13,
-                color: "#94a3b8",
-              }}
-            >
-              Explore campaigns and track how funds are used. You&apos;ll be
-              able to see which campaigns have been verified before donating.
-            </p>
-            <button
-              type="button"
-              style={{
-                marginTop: 4,
-                alignSelf: "flex-start",
-                padding: "7px 12px",
-                borderRadius: 999,
-                border: "none",
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#0f172a",
-                background:
-                  "linear-gradient(135deg, #22c55e 0%, #a3e635 45%, #22c55e 100%)",
-                cursor: "pointer",
-              }}
-            >
-              Continue as donor
-            </button>
-          </div>
-
-          <div
-            style={{
-              padding: 16,
-              borderRadius: 16,
-              border: "1px solid rgba(129,140,248,0.6)",
-              background:
-                "linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,64,175,0.6))",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            <h2
-              style={{
-                fontSize: 16,
-                fontWeight: 600,
-                color: "#e5e7eb",
-              }}
-            >
-              I&apos;m a campaign creator
-            </h2>
-            <p
-              style={{
-                fontSize: 13,
-                color: "#c7d2fe",
-              }}
-            >
-              Create transparent campaigns for your cause and withdraw funds
-              securely after donations come in.
-            </p>
-            <button
-              type="button"
-              onClick={() => router.push("/create")}
-              style={{
-                marginTop: 4,
-                alignSelf: "flex-start",
-                padding: "7px 12px",
-                borderRadius: 999,
-                border: "1px solid rgba(191,219,254,0.6)",
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#e0f2fe",
-                backgroundColor: "rgba(15,23,42,0.6)",
-                cursor: "pointer",
-              }}
-            >
-              Continue as campaign creator
-            </button>
-          </div>
+              <div
+                style={{
+                  marginBottom: "1.5rem",
+                  display: "flex",
+                  justifyContent: "center",
+                }}
+              >
+                <Image
+                  src={feature.icon}
+                  alt={feature.title}
+                  width={80}
+                  height={80}
+                  style={{
+                    objectFit: "contain",
+                  }}
+                />
+              </div>
+              <h3
+                style={{
+                  fontSize: "1.25rem",
+                  fontWeight: 600,
+                  color: "#344e41",
+                  marginBottom: "0.75rem",
+                }}
+              >
+                {feature.title}
+              </h3>
+              <p
+                style={{
+                  fontSize: "0.9375rem",
+                  color: "#3a5a40",
+                  lineHeight: 1.6,
+                }}
+              >
+                {feature.description}
+              </p>
+            </div>
+          ))}
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
