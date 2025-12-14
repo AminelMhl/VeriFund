@@ -9,10 +9,11 @@ async function main() {
 
   // Check deployer balance
   const balance = await hre.ethers.provider.getBalance(deployer.address);
-  console.log("Account balance:", hre.ethers.formatEther(balance), "ETH");
+  const nativeCurrency = hre.network.name.includes("polygon") ? "MATIC" : "ETH";
+  console.log("Account balance:", hre.ethers.formatEther(balance), nativeCurrency);
 
   if (balance === 0n) {
-    throw new Error("Deployer has no ETH for gas fees!");
+    throw new Error(`Deployer has no ${nativeCurrency} for gas fees!`);
   }
 
   // Deploy DonationRegistry
@@ -63,7 +64,8 @@ async function main() {
 
   // For non-local networks, remind to verify on explorer
   if (hre.network.name !== "hardhat" && hre.network.name !== "localhost") {
-    console.log("To verify on Etherscan:");
+    const explorerName = hre.network.name.includes("polygon") ? "Polygonscan" : "Etherscan";
+    console.log(`To verify on ${explorerName}:`);
     console.log(`npx hardhat verify --network ${hre.network.name} ${contractAddress}`);
     console.log("\nOr run: npm run verify");
   }

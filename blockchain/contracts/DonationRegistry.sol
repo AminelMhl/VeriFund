@@ -52,35 +52,7 @@ pragma solidity ^0.8.24;
  *   - The address receiving the funds
  *   - Set per campaign by the Charity
  *   - Receives funds only after milestone approval
- * 
- * ============================================================================
- *                              WORKFLOW DIAGRAM
- * ============================================================================
- * 
- *   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
- *   │   CHARITY   │     │   DONORS    │     │  VALIDATOR  │     │ BENEFICIARY │
- *   └──────┬──────┘     └──────┬──────┘     └──────┬──────┘     └──────┬──────┘
- *          │                   │                   │                   │
- *          │ 1. createCampaign │                   │                   │
- *          │ (with milestones) │                   │                   │
- *          ├───────────────────►                   │                   │
- *          │                   │                   │                   │
- *          │                   │ 2. donate(id)     │                   │
- *          │                   ├──────────────────►│                   │
- *          │                   │   (ETH held in    │                   │
- *          │                   │    escrow)        │                   │
- *          │                   │                   │                   │
- *          │ 3. submitProof    │                   │                   │
- *          │ (IPFS hash)       │                   │                   │
- *          ├───────────────────────────────────────►                   │
- *          │                   │                   │                   │
- *          │                   │   4. approveMilestone                 │
- *          │                   │   (triggers auto-release)             │
- *          │                   │                   ├───────────────────►
- *          │                   │                   │   Funds sent to   │
- *          │                   │                   │   Beneficiary     │
- *          ▼                   ▼                   ▼                   ▼
- * 
+ 
  * ============================================================================
  *                              SECURITY FEATURES
  * ============================================================================
@@ -157,6 +129,7 @@ contract DonationRegistry is AccessControl, ReentrancyGuard, Pausable {
         string ipfsProofHash;   // IPFS CID for proof of work (images/docs)
         bool isApproved;        // Validator has approved this milestone
         bool isReleased;        // Funds have been released to beneficiary
+        bool receiptConfirmed;  // Beneficiary confirmed receipt of funds
     }
     
     /**
@@ -304,6 +277,15 @@ contract DonationRegistry is AccessControl, ReentrancyGuard, Pausable {
         uint256 amount
     );
     
+    /// @notice Emitted when beneficiary confirms receipt of funds
+    event ReceiptConfirmed(
+        uint256 indexed campaignId,
+        uint256 indexed milestoneIndex,
+        address indexed beneficiary,
+        uint256 amount,
+        uint256 timestamp
+    );
+    
     /// @notice Emitted when a campaign is closed
     event CampaignClosed(uint256 indexed campaignId);
     
@@ -334,6 +316,9 @@ contract DonationRegistry is AccessControl, ReentrancyGuard, Pausable {
     error InvalidAmount();
     error MilestoneAmountMismatch();
     error NotCampaignCharity();
+    error NotBeneficiary();
+    error ReceiptAlreadyConfirmed();
+    error FundsNotYetReleased();
     error ZeroDonation();
     error TransferFailed();
 
@@ -514,7 +499,8 @@ contract DonationRegistry is AccessControl, ReentrancyGuard, Pausable {
                 description: milestoneDescriptions[i],
                 ipfsProofHash: "",      // Empty until proof submitted
                 isApproved: false,
-                isReleased: false
+                isReleased: false,
+                receiptConfirmed: false // Not confirmed until beneficiary acknowledges
             });
             
             emit MilestoneAdded(campaignId, i, milestoneAmounts[i], milestoneDescriptions[i]);
@@ -742,6 +728,66 @@ contract DonationRegistry is AccessControl, ReentrancyGuard, Pausable {
             milestoneIndex,
             campaign.beneficiary,
             milestone.amount
+        );
+    }
+
+    /**
+     * @dev Beneficiary confirms receipt of milestone funds
+     * 
+     * @param campaignId The campaign ID
+     * @param milestoneIndex The milestone index to confirm
+     * 
+     * @notice Only the campaign beneficiary can confirm receipt
+     * @notice Funds must have been released before confirmation
+     * @notice Creates an on-chain audit trail of fund delivery
+     * 
+     * Why is this important?
+     * - Completes the end-to-end traceability requirement
+     * - Provides proof that funds reached the intended recipient
+     * - Enables regulatory compliance and transparency
+     * - Creates immutable record for auditors and donors
+     * 
+     * Workflow:
+     * 1. Validator approves milestone → funds automatically released
+     * 2. Beneficiary receives funds in their wallet
+     * 3. Beneficiary calls this function to acknowledge receipt
+     * 4. Event emitted for public verification
+     */
+    function confirmReceipt(
+        uint256 campaignId,
+        uint256 milestoneIndex
+    ) external whenNotPaused {
+        // Get campaign
+        Campaign storage campaign = campaigns[campaignId];
+        
+        // Validate campaign exists
+        if (campaign.charity == address(0)) revert CampaignNotFound();
+        
+        // Validate milestone exists
+        if (milestoneIndex >= campaign.milestoneCount) revert MilestoneNotFound();
+        
+        // Get milestone
+        Milestone storage milestone = milestones[campaignId][milestoneIndex];
+        
+        // Only beneficiary can confirm receipt
+        if (msg.sender != campaign.beneficiary) revert NotBeneficiary();
+        
+        // Funds must have been released first
+        if (!milestone.isReleased) revert FundsNotYetReleased();
+        
+        // Cannot confirm twice
+        if (milestone.receiptConfirmed) revert ReceiptAlreadyConfirmed();
+        
+        // Mark receipt as confirmed
+        milestone.receiptConfirmed = true;
+        
+        // Emit confirmation event
+        emit ReceiptConfirmed(
+            campaignId,
+            milestoneIndex,
+            campaign.beneficiary,
+            milestone.amount,
+            block.timestamp
         );
     }
 
