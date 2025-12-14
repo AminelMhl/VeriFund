@@ -19,7 +19,6 @@ module.exports = {
         enabled: true,
         runs: 200,
       },
-      viaIR: true,
     },
   },
   networks: {
@@ -30,21 +29,32 @@ module.exports = {
       url: "http://127.0.0.1:8545",
       chainId: 31337,
     },
+    // Ethereum Testnet (Backup option - easier faucet access)
     sepolia: {
-      url: process.env.SEPOLIA_RPC || "",
+      url: process.env.SEPOLIA_RPC || "https://rpc.sepolia.org",
       accounts: getAccounts(),
       chainId: 11155111,
     },
-    mainnet: {
-      url: process.env.MAINNET_RPC || "",
+    // Polygon Networks
+    polygonAmoy: {
+      url: process.env.POLYGON_AMOY_RPC || "https://rpc-amoy.polygon.technology",
       accounts: getAccounts(),
-      chainId: 1,
+      chainId: 80002,
+      gas: 2500000,
+      gasPrice: 30000000000,
+      timeout: 180000,
+    },
+    polygon: {
+      url: process.env.POLYGON_RPC || "https://polygon-rpc.com",
+      accounts: getAccounts(),
+      chainId: 137,
+      gasPrice: 200000000000, // 200 gwei (adjust based on network conditions)
     },
   },
   etherscan: {
     apiKey: {
-      mainnet: process.env.ETHERSCAN_API_KEY || "",
-      sepolia: process.env.ETHERSCAN_API_KEY || "",
+      polygon: process.env.POLYGONSCAN_API_KEY || "",
+      polygonAmoy: process.env.POLYGONSCAN_API_KEY || "",
     },
   },
   gasReporter: {
