@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useDonate } from "@/hooks/useDonate";
 import { useCampaign } from "@/hooks/useCampaigns";
+import { USE_MOCK_BLOCKCHAIN } from "@/lib/contract";
 import TransactionStatus from "@/components/TransactionStatus";
 
 interface DonationFormProps {
@@ -20,6 +21,7 @@ export default function DonationForm({
 }: DonationFormProps) {
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const { donate, isPending, isConfirming, isSuccess, hash, error: txError, reset } = useDonate();
   const { refetch } = useCampaign(campaignId);
@@ -60,6 +62,13 @@ export default function DonationForm({
   // Handle input change with real-time validation
   const handleAmountChange = (value: string) => {
     setAmount(value);
+
+    // For the mock prototype, keep this forgiving so typing always works
+    if (USE_MOCK_BLOCKCHAIN) {
+      setError("");
+      return;
+    }
+
     if (value.trim() !== "") {
       const validation = validateAmount(value);
       setError(validation.error);
@@ -70,6 +79,8 @@ export default function DonationForm({
 
   // Handle input blur
   const handleBlur = () => {
+    if (USE_MOCK_BLOCKCHAIN) return;
+
     if (amount.trim() !== "") {
       const validation = validateAmount(amount);
       setError(validation.error);
@@ -80,14 +91,13 @@ export default function DonationForm({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Validate amount
-    const validation = validateAmount(amount);
-    if (!validation.valid) {
-      setError(validation.error);
+    // Basic amount check first
+    if (!amount.trim()) {
+      setError("Please enter an amount");
       return;
     }
 
-    // Check campaign eligibility
+    // Block donations for unverified or closed campaigns (both mock and real)
     if (!isVerified) {
       setError("This campaign is not verified");
       return;
@@ -98,15 +108,33 @@ export default function DonationForm({
       return;
     }
 
+    if (!USE_MOCK_BLOCKCHAIN) {
+      // Full validation in real blockchain mode
+      const validation = validateAmount(amount);
+      if (!validation.valid) {
+        setError(validation.error);
+        return;
+      }
+    }
+
     // Clear any previous errors
     setError("");
 
     // Execute donation
     donate(campaignId, amount);
+
+    if (USE_MOCK_BLOCKCHAIN) {
+      setSuccessMessage("Donation successful! Thank you for your support.");
+      setAmount("");
+      refetch();
+      if (onSuccess) {
+        onSuccess();
+      }
+    }
   };
 
-  // Handle success
-  if (isSuccess && hash) {
+  // Handle success (only auto-clear for real blockchain mode)
+  if (!USE_MOCK_BLOCKCHAIN && isSuccess && hash) {
     setTimeout(() => {
       setAmount("");
       setError("");
@@ -195,6 +223,16 @@ export default function DonationForm({
           </span>
         </button>
       </form>
+
+      {successMessage && (
+        <p
+          className="success-banner"
+          role="status"
+          aria-live="polite"
+        >
+          {successMessage}
+        </p>
+      )}
 
       <TransactionStatus
         isPending={isPending}
@@ -364,6 +402,16 @@ export default function DonationForm({
           color: #dc2626;
           font-size: 0.875rem;
           margin: 0;
+        }
+
+        .success-banner {
+          margin-top: 12px;
+          padding: 12px;
+          border-radius: 8px;
+          background-color: #e8f5e9;
+          border: 1px solid #a3b18a;
+          color: #166534;
+          font-size: 0.875rem;
         }
 
         /* Responsive Design - Mobile First */

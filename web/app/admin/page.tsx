@@ -8,7 +8,8 @@ import {
   useReadContracts,
   useWriteContract,
 } from "wagmi";
-import { CONTRACT_ABI, getContractAddress } from "../../lib/contract";
+import { CONTRACT_ABI, USE_MOCK_BLOCKCHAIN, getContractAddress } from "../../lib/contract";
+import { mockApproveCampaign, mockCloseCampaign, mockDeleteCampaign, mockGetAllCampaigns } from "@/lib/mockChain";
 import Header from "@/components/Header";
 
 const METADATA_PREFIX = "data:application/json,";
@@ -41,6 +42,234 @@ export default function AdminDashboard() {
   const { address } = useAccount();
   const chainId = useChainId();
   const contractAddress = getContractAddress(chainId);
+
+  // In mock mode, treat the connected user as admin and use local campaigns
+  if (USE_MOCK_BLOCKCHAIN) {
+    const [isClient, setIsClient] = useState(false);
+    const [campaigns, setCampaigns] = useState<ReturnType<typeof mockGetAllCampaigns>>(
+      []
+    );
+    const [isWriting, setIsWriting] = useState(false);
+    const [lastAction, setLastAction] = useState<string | null>(null);
+
+    useEffect(() => {
+      setIsClient(true);
+      setCampaigns(mockGetAllCampaigns());
+    }, []);
+
+    const handleApprove = (id: bigint) => {
+      setIsWriting(true);
+      setLastAction(`approve-${id.toString()}`);
+      mockApproveCampaign(id);
+      setCampaigns(mockGetAllCampaigns());
+      setIsWriting(false);
+    };
+
+    const handleClose = (id: bigint) => {
+      setIsWriting(true);
+      setLastAction(`close-${id.toString()}`);
+      mockCloseCampaign(id);
+      setCampaigns(mockGetAllCampaigns());
+      setIsWriting(false);
+    };
+
+    const handleDelete = (id: bigint) => {
+      if (!window.confirm("Are you sure you want to delete this campaign?")) {
+        return;
+      }
+      setIsWriting(true);
+      setLastAction(`delete-${id.toString()}`);
+      mockDeleteCampaign(id);
+      setCampaigns(mockGetAllCampaigns());
+      setIsWriting(false);
+    };
+
+    if (!isClient) {
+      return (
+        <>
+          <Header />
+          <main
+            style={{
+              maxWidth: "1080px",
+              margin: "0 auto",
+              padding: "3rem 1.5rem",
+              backgroundColor: "#ffffff",
+              minHeight: "calc(100vh - 73px)",
+            }}
+          >
+            <h1
+              style={{
+                fontSize: 26,
+                marginBottom: 8,
+                fontWeight: 600,
+                color: "#344e41",
+              }}
+            >
+              Admin Dashboard
+            </h1>
+            <p style={{ fontSize: 14, color: "#6c757d" }}>
+              Loading admin dashboard...
+            </p>
+          </main>
+        </>
+      );
+    }
+
+    const formattedCampaigns = campaigns.map((c) => ({
+      id: BigInt(c.id),
+      title: c.title,
+      description: c.description,
+      goalEth: c.goalETH,
+      raisedEth: c.raisedETH,
+      verified: c.verified,
+      active: c.active,
+      owner: c.owner,
+    }));
+
+    // The existing component is quite long; for mock mode, a simple list is
+    // enough for a prototype.
+    return (
+      <>
+        <Header />
+        <main
+          style={{
+            maxWidth: "1080px",
+            margin: "0 auto",
+            padding: "3rem 1.5rem",
+            backgroundColor: "#ffffff",
+            minHeight: "calc(100vh - 73px)",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: 26,
+              marginBottom: 16,
+              fontWeight: 600,
+              color: "#344e41",
+            }}
+          >
+            Admin Dashboard
+          </h1>
+
+          {formattedCampaigns.length === 0 && (
+            <p style={{ fontSize: 14, color: "#6c757d" }}>
+              No campaigns yet. Create one on the Create Campaign page.
+            </p>
+          )}
+
+          <div style={{ display: "grid", gap: 16 }}>
+            {formattedCampaigns.map((c) => (
+              <div
+                key={c.id.toString()}
+                style={{
+                  border: "1px solid #dad7cd",
+                  borderRadius: 12,
+                  padding: 16,
+                  backgroundColor: "#ffffff",
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 600,
+                    color: "#344e41",
+                    marginBottom: 8,
+                  }}
+                >
+                  {c.title || "Untitled Campaign"}
+                </h2>
+                <p
+                  style={{
+                    fontSize: 14,
+                    color: "#3a5a40",
+                    marginBottom: 8,
+                  }}
+                >
+                  {c.description || ""}
+                </p>
+                <p style={{ fontSize: 13, color: "#6c757d", marginBottom: 4 }}>
+                  Goal: {c.goalEth} ETH
+                </p>
+                <p style={{ fontSize: 13, color: "#6c757d", marginBottom: 8 }}>
+                  Raised: {c.raisedEth} ETH
+                </p>
+                <p style={{ fontSize: 13, color: "#6c757d", marginBottom: 8 }}>
+                  Status:{" "}
+                  {c.verified ? "Verified" : "Pending verification"} ·{" "}
+                  {c.active ? "Active" : "Closed"}
+                </p>
+
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {!c.verified && (
+                    <button
+                      onClick={() => handleApprove(c.id)}
+                      disabled={isWriting}
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        borderRadius: 999,
+                        border: "none",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "#ffffff",
+                        background:
+                          "linear-gradient(135deg, #588157 0%, #3a5a40 100%)",
+                        cursor: isWriting ? "default" : "pointer",
+                      }}
+                    >
+                      {isWriting && lastAction?.startsWith("approve-")
+                        ? "Approving..."
+                        : "Approve"}
+                    </button>
+                  )}
+                  {c.active && (
+                    <button
+                      onClick={() => handleClose(c.id)}
+                      disabled={isWriting}
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        borderRadius: 999,
+                        border: "1px solid rgba(239,68,68,0.75)",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "#b91c1c",
+                        backgroundColor: "#fef2f2",
+                        cursor: isWriting ? "default" : "pointer",
+                      }}
+                    >
+                      {isWriting && lastAction?.startsWith("close-")
+                        ? "Closing..."
+                        : "Close"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(c.id)}
+                    disabled={isWriting}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      borderRadius: 999,
+                      border: "1px solid rgba(148,163,184,0.8)",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: "#64748b",
+                      backgroundColor: "#f9fafb",
+                      cursor: isWriting ? "default" : "pointer",
+                    }}
+                  >
+                    {isWriting && lastAction?.startsWith("delete-")
+                      ? "Deleting..."
+                      : "Delete"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
+      </>
+    );
+  }
 
   const {
     data: ownerAddress,

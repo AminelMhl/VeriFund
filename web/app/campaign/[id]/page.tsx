@@ -1,18 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useAccount } from "wagmi";
 import Header from "@/components/Header";
 import CampaignDetails from "@/components/CampaignDetails";
 import DonationForm from "@/components/DonationForm";
 import WalletPrompt from "@/components/WalletPrompt";
 import { useCampaign } from "@/hooks/useCampaigns";
+import { USE_MOCK_BLOCKCHAIN } from "@/lib/contract";
 
-export default function CampaignDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function CampaignDetailPage() {
+  const params = useParams<{ id: string }>();
   const { isConnected } = useAccount();
   const campaignId = BigInt(params.id);
   const { campaign, refetch } = useCampaign(campaignId);
@@ -59,7 +58,7 @@ export default function CampaignDetailPage({
         {/* Donation Section */}
         {campaign && (
           <>
-            {isConnected ? (
+            {USE_MOCK_BLOCKCHAIN || isConnected ? (
               <DonationForm
                 campaignId={campaignId}
                 isVerified={campaign.verified}

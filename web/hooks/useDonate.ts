@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { CONTRACT_ABI, getContractAddress } from "@/lib/contract";
+import { CONTRACT_ABI, USE_MOCK_BLOCKCHAIN, getContractAddress } from "@/lib/contract";
 import { ethToWei } from "@/lib/utils";
+import { mockDonateToCampaign } from "@/lib/mockChain";
 import type { UseDonateReturn } from "@/types/campaign";
 
 /**
@@ -78,6 +80,37 @@ function parseContractError(error: Error | null): string | null {
  * Manages transaction state and confirmation with user-friendly error handling
  */
 export function useDonate(): UseDonateReturn {
+  // Mock mode: update local state and simulate a successful donation
+  if (USE_MOCK_BLOCKCHAIN) {
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const donate = (campaignId: bigint, amountETH: string) => {
+      try {
+        setError(null);
+        mockDonateToCampaign(campaignId, amountETH);
+        setIsSuccess(true);
+      } catch (e) {
+        setError((e as Error).message || "Failed to record donation.");
+      }
+    };
+
+    const reset = () => {
+      setIsSuccess(false);
+      setError(null);
+    };
+
+    return {
+      donate,
+      isPending: false,
+      isConfirming: false,
+      isSuccess,
+      error,
+      hash: undefined,
+      reset,
+    };
+  }
+
   const chainId = useChainId();
   const contractAddress = getContractAddress(chainId);
 

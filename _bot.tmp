@@ -1,0 +1,440 @@
+        return campaignId;
+    }
+
+    // =========================================================================
+    //                         DONATION FUNCTIONS
+    // =========================================================================
+    
+    /**
+     * @dev Donate ETH to a specific campaign
+     * 
+     * @param campaignId The ID of the campaign to donate to
+     * 
+     * @notice Anyone can donate (no role required)
+     * @notice Funds are held in escrow (this contract) until milestone approval
+     * @notice Donations are tracked per donor for transparency
+     * 
+     * Example:
+     *   donate(1); // Called with msg.value = 0.5 ether
+     * 
+     * Security:
+     * - nonReentrant: Prevents reentrancy attacks
+     * - whenNotPaused: Blocks donations if contract is paused
+     * - Validates campaign exists and is active
+     * - Validates donation amount > 0
+     * 
+     * What happens:
+     * 1. ETH is transferred to this contract (escrow)
+     * 2. Campaign's currentAmount is updated
+     * 3. Donor's contribution is recorded
+     * 4. Event is emitted for indexing
+     */
+    function donate(uint256 campaignId) external payable nonReentrant whenNotPaused {
+        // Get campaign from storage
+        Campaign storage campaign = campaigns[campaignId];
+        
+        // Validate campaign exists (charity address != 0 means it exists)
+        if (campaign.charity == address(0)) revert CampaignNotFound();
+        
+        // Validate campaign is still accepting donations
+        if (!campaign.isActive) revert CampaignNotActive();
+        
+        // Validate donation amount is positive
+        if (msg.value == 0) revert ZeroDonation();
+        
+        // Update campaign total (funds held in contract)
+        campaign.currentAmount += msg.value;
+        
+        // Track this donor's contribution
+        donationsByAddress[msg.sender][campaignId] += msg.value;
+        
+        // Emit event for frontend/indexer
+        emit DonationReceived(
+            campaignId,
+            msg.sender,
+            msg.value,
+            campaign.currentAmount
+        );
+    }
+
+    // =========================================================================
+    //                         PROOF SUBMISSION
+    // =========================================================================
+    
+    /**
+     * @dev Submit proof of work for a milestone
+     * 
+     * @param campaignId The campaign ID
+     * @param milestoneIndex The index of the milestone (0-based)
+     * @param ipfsHash IPFS Content Identifier (CID) for proof documents
+     * 
+     * @notice Only the charity that created the campaign can submit proof
+     * @notice IPFS hash should point to images, receipts, reports, etc.
+     * 
+     * Example:
+     *   submitProof(1, 0, "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG");
+     * 
+     * Workflow:
+     * 1. Charity completes milestone work (e.g., buys supplies)
+     * 2. Charity uploads evidence to IPFS (photos, receipts)
+     * 3. Charity calls this function with the IPFS hash
+     * 4. Validator reviews the IPFS content off-chain
+     * 5. If satisfied, validator calls approveMilestone()
+     * 
+     * Why IPFS?
+     * - Decentralized storage (no single point of failure)
+     * - Content-addressed (hash = content fingerprint)
+     * - Immutable (can't change content without changing hash)
+     * - Cost-effective (storing hash on-chain is cheap)
+     */
+    function submitProof(
+        uint256 campaignId,
+        uint256 milestoneIndex,
+        string calldata ipfsHash
+    ) external whenNotPaused {
+        // Get campaign
+        Campaign storage campaign = campaigns[campaignId];
+        
+        // Validate campaign exists
+        if (campaign.charity == address(0)) revert CampaignNotFound();
+        
+        // Only the charity that created this campaign can submit proof
+        if (msg.sender != campaign.charity) revert NotCampaignCharity();
+        
+        // Validate milestone exists
+        if (milestoneIndex >= campaign.milestoneCount) revert MilestoneNotFound();
+        
+        // Get milestone
+        Milestone storage milestone = milestones[campaignId][milestoneIndex];
+        
+        // Cannot submit proof for already approved milestone
+        if (milestone.isApproved) revert MilestoneAlreadyApproved();
+        
+        // Validate IPFS hash is not empty
+        require(bytes(ipfsHash).length > 0, "IPFS hash required");
+        
+        // Store the proof hash
+        milestone.ipfsProofHash = ipfsHash;
+        
+        // Emit event for validator notification
+        emit ProofSubmitted(campaignId, milestoneIndex, ipfsHash);
+    }
+
+    // =========================================================================
+    //                         MILESTONE APPROVAL & FUND RELEASE
+    // =========================================================================
+    
+    /**
+     * @dev Approve a milestone and automatically release funds to beneficiary
+     * 
+     * @param campaignId The campaign ID
+     * @param milestoneIndex The index of the milestone to approve
+     * 
+     * @notice Only addresses with VALIDATOR_ROLE can call this
+     * @notice Triggers automatic fund transfer to beneficiary
+     * @notice This is the ONLY way funds can leave the contract (except emergency)
+     * 
+     * Example:
+     *   approveMilestone(1, 0); // Approve first milestone of campaign 1
+     * 
+     * Security:
+     * - onlyRole(VALIDATOR_ROLE): Only trusted validators can approve
+     * - nonReentrant: Prevents reentrancy during ETH transfer
+     * - Checks proof was submitted
+     * - Checks sufficient funds in escrow
+     * - Marks milestone as released to prevent double-spending
+     * 
+     * Fund flow:
+     *   Contract (Escrow) ---> Beneficiary Address
+     * 
+     * This function implements the core security model:
+     * - Charities CANNOT release their own funds
+     * - Funds ONLY move after independent validation
+     * - Creates verifiable on-chain approval trail
+     */
+    function approveMilestone(
+        uint256 campaignId,
+        uint256 milestoneIndex
+    ) external onlyRole(VALIDATOR_ROLE) nonReentrant whenNotPaused {
+        // Get campaign
+        Campaign storage campaign = campaigns[campaignId];
+        
+        // Validate campaign exists
+        if (campaign.charity == address(0)) revert CampaignNotFound();
+        
+        // Validate milestone exists
+        if (milestoneIndex >= campaign.milestoneCount) revert MilestoneNotFound();
+        
+        // Get milestone
+        Milestone storage milestone = milestones[campaignId][milestoneIndex];
+        
+        // Check proof was submitted
+        if (bytes(milestone.ipfsProofHash).length == 0) revert ProofNotSubmitted();
+        
+        // Check milestone not already approved
+        if (milestone.isApproved) revert MilestoneAlreadyApproved();
+        
+        // Check milestone not already released (double-spend protection)
+        if (milestone.isReleased) revert MilestoneAlreadyReleased();
+        
+        // Calculate available funds (donated - already released)
+        uint256 availableFunds = campaign.currentAmount - campaign.releasedAmount;
+        
+        // Check sufficient funds in escrow for this milestone
+        if (availableFunds < milestone.amount) revert InsufficientFunds();
+        
+        // ===== UPDATE STATE BEFORE TRANSFER (Checks-Effects-Interactions) =====
+        
+        // Mark milestone as approved and released
+        milestone.isApproved = true;
+        milestone.isReleased = true;
+        
+        // Update released amount tracker
+        campaign.releasedAmount += milestone.amount;
+        
+        // Emit approval event
+        emit MilestoneApproved(campaignId, milestoneIndex, msg.sender);
+        
+        // ===== TRANSFER FUNDS TO BENEFICIARY =====
+        
+        // Use call instead of transfer for gas flexibility
+        // transfer() and send() have 2300 gas limit which can fail
+        (bool success, ) = campaign.beneficiary.call{value: milestone.amount}("");
+        if (!success) revert TransferFailed();
+        
+        // Emit release event
+        emit FundsReleased(
+            campaignId,
+            milestoneIndex,
+            campaign.beneficiary,
+            milestone.amount
+        );
+    }
+
+    /**
+     * @dev Beneficiary confirms receipt of milestone funds
+     * 
+     * @param campaignId The campaign ID
+     * @param milestoneIndex The milestone index to confirm
+     * 
+     * @notice Only the campaign beneficiary can confirm receipt
+     * @notice Funds must have been released before confirmation
+     * @notice Creates an on-chain audit trail of fund delivery
+     * 
+     * Why is this important?
+     * - Completes the end-to-end traceability requirement
+     * - Provides proof that funds reached the intended recipient
+     * - Enables regulatory compliance and transparency
+     * - Creates immutable record for auditors and donors
+     * 
+     * Workflow:
+     * 1. Validator approves milestone → funds automatically released
+     * 2. Beneficiary receives funds in their wallet
+     * 3. Beneficiary calls this function to acknowledge receipt
+     * 4. Event emitted for public verification
+     */
+    function confirmReceipt(
+        uint256 campaignId,
+        uint256 milestoneIndex
+    ) external whenNotPaused {
+        // Get campaign
+        Campaign storage campaign = campaigns[campaignId];
+        
+        // Validate campaign exists
+        if (campaign.charity == address(0)) revert CampaignNotFound();
+        
+        // Validate milestone exists
+        if (milestoneIndex >= campaign.milestoneCount) revert MilestoneNotFound();
+        
+        // Get milestone
+        Milestone storage milestone = milestones[campaignId][milestoneIndex];
+        
+        // Only beneficiary can confirm receipt
+        if (msg.sender != campaign.beneficiary) revert NotBeneficiary();
+        
+        // Funds must have been released first
+        if (!milestone.isReleased) revert FundsNotYetReleased();
+        
+        // Cannot confirm twice
+        if (milestone.receiptConfirmed) revert ReceiptAlreadyConfirmed();
+        
+        // Mark receipt as confirmed
+        milestone.receiptConfirmed = true;
+        
+        // Emit confirmation event
+        emit ReceiptConfirmed(
+            campaignId,
+            milestoneIndex,
+            campaign.beneficiary,
+            milestone.amount,
+            block.timestamp
+        );
+    }
+
+    // =========================================================================
+    //                         CAMPAIGN MANAGEMENT
+    // =========================================================================
+    
+    /**
+     * @dev Close a campaign (stop accepting donations)
+     * 
+     * @param campaignId The campaign to close
+     * 
+     * @notice Only the charity that created the campaign can close it
+     * @notice Closing does NOT affect pending milestones or escrowed funds
+     * 
+     * Use cases:
+     * - Campaign reached its goal
+     * - Campaign is no longer active
+     * - Charity wants to stop accepting more donations
+     */
+    function closeCampaign(uint256 campaignId) external whenNotPaused {
+        Campaign storage campaign = campaigns[campaignId];
+        
+        if (campaign.charity == address(0)) revert CampaignNotFound();
+        if (msg.sender != campaign.charity) revert NotCampaignCharity();
+        
+        campaign.isActive = false;
+        
+        emit CampaignClosed(campaignId);
+    }
+
+    // =========================================================================
+    //                         VIEW FUNCTIONS
+    // =========================================================================
+    
+    /**
+     * @dev Get full campaign details
+     * @param campaignId The campaign ID
+     * @return Campaign struct with all fields
+     */
+    function getCampaign(uint256 campaignId) external view returns (Campaign memory) {
+        Campaign storage campaign = campaigns[campaignId];
+        if (campaign.charity == address(0)) revert CampaignNotFound();
+        return campaign;
+    }
+    
+    /**
+     * @dev Get milestone details
+     * @param campaignId The campaign ID
+     * @param milestoneIndex The milestone index (0-based)
+     * @return Milestone struct with all fields
+     */
+    function getMilestone(
+        uint256 campaignId,
+        uint256 milestoneIndex
+    ) external view returns (Milestone memory) {
+        if (campaigns[campaignId].charity == address(0)) revert CampaignNotFound();
+        if (milestoneIndex >= campaigns[campaignId].milestoneCount) revert MilestoneNotFound();
+        return milestones[campaignId][milestoneIndex];
+    }
+    
+    /**
+     * @dev Get all milestones for a campaign
+     * @param campaignId The campaign ID
+     * @return Array of Milestone structs
+     */
+    function getAllMilestones(uint256 campaignId) external view returns (Milestone[] memory) {
+        Campaign storage campaign = campaigns[campaignId];
+        if (campaign.charity == address(0)) revert CampaignNotFound();
+        
+        Milestone[] memory result = new Milestone[](campaign.milestoneCount);
+        for (uint256 i = 0; i < campaign.milestoneCount; i++) {
+            result[i] = milestones[campaignId][i];
+        }
+        return result;
+    }
+    
+    /**
+     * @dev Get a donor's total contribution to a campaign
+     * @param donor The donor's address
+     * @param campaignId The campaign ID
+     * @return Total amount donated in wei
+     */
+    function getDonation(address donor, uint256 campaignId) external view returns (uint256) {
+        return donationsByAddress[donor][campaignId];
+    }
+    
+    /**
+     * @dev Check if an address has a specific role
+     * @param role The role to check (CHARITY_ROLE, VALIDATOR_ROLE, etc.)
+     * @param account The address to check
+     * @return bool True if the address has the role
+     */
+    function checkRole(bytes32 role, address account) external view returns (bool) {
+        return hasRole(role, account);
+    }
+
+    // =========================================================================
+    //                         ADMIN FUNCTIONS
+    // =========================================================================
+    
+    /**
+     * @dev Pause the contract in emergencies
+     * @notice Blocks: donations, proof submissions, approvals, campaign creation
+     * @notice Only DEFAULT_ADMIN_ROLE can call
+     */
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+    
+    /**
+     * @dev Unpause the contract
+     * @notice Resumes normal operations
+     * @notice Only DEFAULT_ADMIN_ROLE can call
+     */
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
+    
+    /**
+     * @dev Emergency withdraw - Admin can rescue stuck/misallocated funds
+     * 
+     * @param to Address to send funds to
+     * @param amount Amount to withdraw in wei
+     * 
+     * @notice Use with extreme caution - bypasses normal approval flow
+     * @notice Should only be used for stuck funds or critical emergencies
+     * @notice All calls are recorded on-chain for accountability
+     * 
+     * Security: 
+     * - Only DEFAULT_ADMIN_ROLE can call
+     * - Protected by nonReentrant
+     * - Validates recipient address
+     */
+    function emergencyWithdraw(
+        address payable to,
+        uint256 amount
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+        require(to != address(0), "Invalid recipient");
+        require(amount <= address(this).balance, "Insufficient balance");
+        
+        (bool success, ) = to.call{value: amount}("");
+        if (!success) revert TransferFailed();
+    }
+
+    // =========================================================================
+    //                         FALLBACK FUNCTIONS
+    // =========================================================================
+    
+    /**
+     * @dev Reject direct ETH transfers
+     * @notice Forces users to use donate() function for proper tracking
+     * 
+     * Why reject direct transfers?
+     * - Donations must be associated with a campaign
+     * - Ensures proper event emission and tracking
+     * - Prevents accidental "lost" ETH
+     */
+    receive() external payable {
+        revert("Use donate(campaignId) function");
+    }
+    
+    /**
+     * @dev Reject calls to non-existent functions
+     */
+    fallback() external payable {
+        revert("Function does not exist");
+    }
+}
+
