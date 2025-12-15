@@ -40,7 +40,7 @@ module.exports = {
       url: process.env.POLYGON_AMOY_RPC || "https://rpc-amoy.polygon.technology",
       accounts: getAccounts(),
       chainId: 80002,
-      gas: 2500000,
+      gasLimit: 3000000,
       gasPrice: 30000000000,
       timeout: 180000,
     },

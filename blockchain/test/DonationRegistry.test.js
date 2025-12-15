@@ -568,6 +568,82 @@ describe("DonationRegistry", function () {
     });
   });
 
+  describe("Beneficiary Receipt Confirmation", function () {
+    beforeEach(async function () {
+      // Create campaign
+      await donationRegistry.connect(charity).createCampaign(
+        beneficiary.address,
+        METADATA_URI,
+        TARGET_AMOUNT,
+        MILESTONE_AMOUNTS,
+        MILESTONE_DESCRIPTIONS
+      );
+
+      // Donate
+      await donationRegistry.connect(donor).donate(1, { value: TARGET_AMOUNT });
+
+      // Submit proof
+      await donationRegistry.connect(charity).submitProof(1, 0, IPFS_PROOF_HASH);
+
+      // Approve milestone (funds released)
+      await donationRegistry.connect(validator).approveMilestone(1, 0);
+    });
+
+    it("Should allow beneficiary to confirm receipt of funds", async function () {
+      await expect(donationRegistry.connect(beneficiary).confirmReceipt(1, 0))
+        .to.emit(donationRegistry, "ReceiptConfirmed")
+        .withArgs(1, 0, beneficiary.address, MILESTONE_AMOUNTS[0], await ethers.provider.getBlock("latest").then(b => b.timestamp + 1));
+
+      const milestone = await donationRegistry.getMilestone(1, 0);
+      expect(milestone.receiptConfirmed).to.be.true;
+    });
+
+    it("Should revert if non-beneficiary tries to confirm receipt", async function () {
+      await expect(
+        donationRegistry.connect(donor).confirmReceipt(1, 0)
+      ).to.be.revertedWithCustomError(donationRegistry, "NotBeneficiary");
+    });
+
+    it("Should revert if funds not yet released", async function () {
+      // Submit proof for milestone 1 but don't approve yet
+      await donationRegistry.connect(charity).submitProof(1, 1, IPFS_PROOF_HASH);
+
+      await expect(
+        donationRegistry.connect(beneficiary).confirmReceipt(1, 1)
+      ).to.be.revertedWithCustomError(donationRegistry, "FundsNotYetReleased");
+    });
+
+    it("Should revert if receipt already confirmed", async function () {
+      // First confirmation
+      await donationRegistry.connect(beneficiary).confirmReceipt(1, 0);
+
+      // Try to confirm again
+      await expect(
+        donationRegistry.connect(beneficiary).confirmReceipt(1, 0)
+      ).to.be.revertedWithCustomError(donationRegistry, "ReceiptAlreadyConfirmed");
+    });
+
+    it("Should revert if campaign does not exist", async function () {
+      await expect(
+        donationRegistry.connect(beneficiary).confirmReceipt(999, 0)
+      ).to.be.revertedWithCustomError(donationRegistry, "CampaignNotFound");
+    });
+
+    it("Should revert if milestone does not exist", async function () {
+      await expect(
+        donationRegistry.connect(beneficiary).confirmReceipt(1, 999)
+      ).to.be.revertedWithCustomError(donationRegistry, "MilestoneNotFound");
+    });
+
+    it("Should block receipt confirmation when contract is paused", async function () {
+      await donationRegistry.connect(admin).pause();
+
+      await expect(
+        donationRegistry.connect(beneficiary).confirmReceipt(1, 0)
+      ).to.be.revertedWithCustomError(donationRegistry, "EnforcedPause");
+    });
+  });
+
   describe("Full Workflow Integration Test", function () {
     it("Should complete full donation-to-release workflow", async function () {
       // 1. Create campaign with 3 milestones
@@ -601,6 +677,12 @@ describe("DonationRegistry", function () {
       const milestone1 = await donationRegistry.getMilestone(1, 0);
       expect(milestone1.isApproved).to.be.true;
       expect(milestone1.isReleased).to.be.true;
+      expect(milestone1.receiptConfirmed).to.be.false; // Not yet confirmed
+
+      // 6b. Beneficiary confirms receipt of milestone 1 funds
+      await donationRegistry.connect(beneficiary).confirmReceipt(1, 0);
+      const milestone1Confirmed = await donationRegistry.getMilestone(1, 0);
+      expect(milestone1Confirmed.receiptConfirmed).to.be.true;
 
       // 7. Continue with milestone 2
       await donationRegistry.connect(charity).submitProof(1, 1, "QmProof2");
@@ -614,9 +696,11 @@ describe("DonationRegistry", function () {
       campaign = await donationRegistry.getCampaign(1);
       expect(campaign.releasedAmount).to.equal(TARGET_AMOUNT);
 
-      // 10. Verify beneficiary received all funds
+      // 10. Verify beneficiary received all funds (approximately, accounting for gas spent on confirmReceipt)
       const finalBalance = await ethers.provider.getBalance(beneficiary.address);
-      expect(finalBalance - beneficiaryBalanceBefore).to.equal(TARGET_AMOUNT);
+      const received = finalBalance - beneficiaryBalanceBefore;
+      // Should have received all funds minus gas costs for confirmReceipt call
+      expect(received).to.be.closeTo(TARGET_AMOUNT, ethers.parseEther("0.001")); // Within 0.001 ETH for gas costs
     });
   });
 });
