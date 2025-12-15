@@ -1,0 +1,260 @@
+        uint256 indexed milestoneIndex,
+        string ipfsProofHash
+    );
+    
+    /// @notice Emitted when validator approves a milestone
+    event MilestoneApproved(
+        uint256 indexed campaignId,
+        uint256 indexed milestoneIndex,
+        address indexed validator
+    );
+    
+    /// @notice Emitted when funds are released to beneficiary
+    event FundsReleased(
+        uint256 indexed campaignId,
+        uint256 indexed milestoneIndex,
+        address indexed beneficiary,
+        uint256 amount
+    );
+    
+    /// @notice Emitted when beneficiary confirms receipt of funds
+    event ReceiptConfirmed(
+        uint256 indexed campaignId,
+        uint256 indexed milestoneIndex,
+        address indexed beneficiary,
+        uint256 amount,
+        uint256 timestamp
+    );
+    
+    /// @notice Emitted when a campaign is closed
+    event CampaignClosed(uint256 indexed campaignId);
+    
+    /// @notice Emitted when a role is granted to an address
+    event RoleGrantedEvent(bytes32 indexed role, address indexed account, address indexed grantor);
+
+    // =========================================================================
+    //                              CUSTOM ERRORS
+    // =========================================================================
+    
+    /**
+     * @dev Custom errors are more gas-efficient than require strings
+     * @notice Introduced in Solidity 0.8.4
+     * 
+     * Gas comparison:
+     * - require("Campaign not found") ≈ 2000+ gas
+     * - revert CampaignNotFound() ≈ 100 gas
+     */
+    
+    error CampaignNotFound();
+    error CampaignNotActive();
+    error MilestoneNotFound();
+    error MilestoneAlreadyApproved();
+    error MilestoneAlreadyReleased();
+    error ProofNotSubmitted();
+    error InsufficientFunds();
+    error InvalidBeneficiary();
+    error InvalidAmount();
+    error MilestoneAmountMismatch();
+    error NotCampaignCharity();
+    error NotBeneficiary();
+    error ReceiptAlreadyConfirmed();
+    error FundsNotYetReleased();
+    error ZeroDonation();
+    error TransferFailed();
+
+    // =========================================================================
+    //                              CONSTRUCTOR
+    // =========================================================================
+    
+    /**
+     * @dev Constructor - Initializes the contract
+     * @notice The deployer becomes the DEFAULT_ADMIN_ROLE holder
+     * 
+     * What happens on deployment:
+     * 1. Deployer gets DEFAULT_ADMIN_ROLE (can manage all roles)
+     * 2. Campaign counter starts at 1
+     * 3. Contract is in active (unpaused) state
+     * 
+     * AccessControl hierarchy:
+     * - DEFAULT_ADMIN_ROLE can grant/revoke CHARITY_ROLE
+     * - DEFAULT_ADMIN_ROLE can grant/revoke VALIDATOR_ROLE
+     * - DEFAULT_ADMIN_ROLE can grant/revoke DEFAULT_ADMIN_ROLE
+     */
+    constructor() {
+        // Grant the deployer the admin role
+        // _grantRole is an internal function from AccessControl
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        
+        // Start campaign IDs at 1 for better UX
+        // ID 0 is often used to check "does not exist"
+        nextCampaignId = 1;
+    }
+
+    // =========================================================================
+    //                         ROLE MANAGEMENT FUNCTIONS
+    // =========================================================================
+    
+    /**
+     * @dev Register a charity organization
+     * @param charityAddress The address to grant CHARITY_ROLE
+     * 
+     * @notice Only callable by admin (DEFAULT_ADMIN_ROLE)
+     * 
+     * Use case: University admin registers verified charity organizations
+     * 
+     * Example:
+     *   registerCharity(0x1234...); // Now this address can create campaigns
+     */
+    function registerCharity(address charityAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(charityAddress != address(0), "Invalid address");
+        _grantRole(CHARITY_ROLE, charityAddress);
+        emit RoleGrantedEvent(CHARITY_ROLE, charityAddress, msg.sender);
+    }
+    
+    /**
+     * @dev Remove charity role from an address
+     * @param charityAddress The address to revoke CHARITY_ROLE from
+     * 
+     * @notice Use if a charity is found to be fraudulent or inactive
+     */
+    function removeCharity(address charityAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(CHARITY_ROLE, charityAddress);
+    }
+    
+    /**
+     * @dev Register a validator (auditor/NGO)
+     * @param validatorAddress The address to grant VALIDATOR_ROLE
+     * 
+     * @notice Validators are trusted third parties who verify milestone completion
+     * 
+     * Example validators:
+     * - University audit department
+     * - NGO oversight committee
+     * - Independent auditing firm
+     */
+    function registerValidator(address validatorAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(validatorAddress != address(0), "Invalid address");
+        _grantRole(VALIDATOR_ROLE, validatorAddress);
+        emit RoleGrantedEvent(VALIDATOR_ROLE, validatorAddress, msg.sender);
+    }
+    
+    /**
+     * @dev Remove validator role from an address
+     * @param validatorAddress The address to revoke VALIDATOR_ROLE from
+     */
+    function removeValidator(address validatorAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(VALIDATOR_ROLE, validatorAddress);
+    }
+
+    // =========================================================================
+    //                         CAMPAIGN CREATION
+    // =========================================================================
+    
+    /**
+     * @dev Create a new fundraising campaign with milestones
+     * 
+     * @param beneficiary Address that will receive funds (hospital, school, etc.)
+     * @param metadataURI IPFS hash containing campaign details (title, description, images)
+     * @param targetAmount Total fundraising goal in wei
+     * @param milestoneAmounts Array of amounts for each milestone (must sum to targetAmount)
+     * @param milestoneDescriptions Array of descriptions for each milestone
+     * 
+     * @return campaignId The unique ID of the created campaign
+     * 
+     * @notice Only addresses with CHARITY_ROLE can call this
+     * @notice Milestones allow phased fund release based on verified progress
+     * 
+     * Example:
+     *   createCampaign(
+     *     0xBeneficiary...,
+     *     "ipfs://QmCampaignMetadata...",
+     *     10 ether,
+     *     [3 ether, 3 ether, 4 ether],
+     *     ["Phase 1: Supplies", "Phase 2: Distribution", "Phase 3: Completion"]
+     *   );
+     * 
+     * Security checks:
+     * 1. Caller must have CHARITY_ROLE
+     * 2. Contract must not be paused
+     * 3. Beneficiary cannot be zero address
+     * 4. Target amount must be > 0
+     * 5. Must have at least 1 milestone
+     * 6. Milestone amounts must sum to target
+     * 7. Arrays must have matching lengths
+     */
+    function createCampaign(
+        address payable beneficiary,
+        string calldata metadataURI,
+        uint256 targetAmount,
+        uint256[] calldata milestoneAmounts,
+        string[] calldata milestoneDescriptions
+    ) external onlyRole(CHARITY_ROLE) whenNotPaused returns (uint256) {
+        // ===== INPUT VALIDATION =====
+        
+        // Check beneficiary is valid (not zero address)
+        if (beneficiary == address(0)) revert InvalidBeneficiary();
+        
+        // Check target amount is positive
+        if (targetAmount == 0) revert InvalidAmount();
+        
+        // Check milestone arrays are valid
+        require(milestoneAmounts.length > 0, "Need at least 1 milestone");
+        require(
+            milestoneAmounts.length == milestoneDescriptions.length,
+            "Array length mismatch"
+        );
+        
+        // Verify milestone amounts sum to target
+        uint256 totalMilestoneAmount = 0;
+        for (uint256 i = 0; i < milestoneAmounts.length; i++) {
+            require(milestoneAmounts[i] > 0, "Milestone amount must be > 0");
+            totalMilestoneAmount += milestoneAmounts[i];
+        }
+        if (totalMilestoneAmount != targetAmount) revert MilestoneAmountMismatch();
+        
+        // ===== CREATE CAMPAIGN =====
+        
+        // Get unique ID and increment counter
+        uint256 campaignId = nextCampaignId++;
+        
+        // Store campaign data
+        campaigns[campaignId] = Campaign({
+            id: campaignId,
+            charity: msg.sender,
+            beneficiary: beneficiary,
+            metadataURI: metadataURI,
+            targetAmount: targetAmount,
+            currentAmount: 0,
+            releasedAmount: 0,
+            milestoneCount: milestoneAmounts.length,
+            isActive: true,
+            createdAt: block.timestamp
+        });
+        
+        // ===== CREATE MILESTONES =====
+        
+        for (uint256 i = 0; i < milestoneAmounts.length; i++) {
+            milestones[campaignId][i] = Milestone({
+                amount: milestoneAmounts[i],
+                description: milestoneDescriptions[i],
+                ipfsProofHash: "",      // Empty until proof submitted
+                isApproved: false,
+                isReleased: false,
+                receiptConfirmed: false // Not confirmed until beneficiary acknowledges
+            });
+            
+            emit MilestoneAdded(campaignId, i, milestoneAmounts[i], milestoneDescriptions[i]);
+        }
+        
+        // ===== EMIT EVENT =====
+        
+        emit CampaignCreated(
+            campaignId,
+            msg.sender,
+            beneficiary,
+            metadataURI,
+            targetAmount,
+            milestoneAmounts.length,
+            block.timestamp
+        );
+        

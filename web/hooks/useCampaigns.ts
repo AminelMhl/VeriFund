@@ -1,15 +1,53 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useChainId, useReadContracts } from "wagmi";
-import { CONTRACT_ABI, getContractAddress } from "@/lib/contract";
+import { CONTRACT_ABI, USE_MOCK_BLOCKCHAIN, getContractAddress } from "@/lib/contract";
 import { formatCampaign } from "@/lib/utils";
-import type { RawCampaign, UseCampaignsReturn, UseCampaignReturn } from "@/types/campaign";
+import { mockGetAllCampaigns, mockGetCampaign } from "@/lib/mockChain";
+import type {
+  RawCampaign,
+  UseCampaignsReturn,
+  UseCampaignReturn,
+  FormattedCampaign,
+} from "@/types/campaign";
 
 /**
  * Hook to fetch all campaigns from the contract
  * Uses batch reading for efficiency
  */
 export function useCampaigns(): UseCampaignsReturn {
+  // Mock mode: use in-browser storage instead of blockchain
+  if (USE_MOCK_BLOCKCHAIN) {
+    const [campaigns, setCampaigns] = useState<FormattedCampaign[] | undefined>(undefined);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
+
+    const load = () => {
+      try {
+        setIsLoading(true);
+        const all = mockGetAllCampaigns();
+        setCampaigns(all);
+        setError(null);
+      } catch (e) {
+        setError(e as Error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    useEffect(() => {
+      load();
+    }, []);
+
+    return {
+      campaigns,
+      isLoading,
+      error,
+      refetch: load,
+    };
+  }
+
   const chainId = useChainId();
   const contractAddress = getContractAddress(chainId);
 
@@ -69,6 +107,43 @@ export function useCampaigns(): UseCampaignsReturn {
  * @param campaignId Campaign ID to fetch
  */
 export function useCampaign(campaignId: bigint | undefined): UseCampaignReturn {
+  // Mock mode: read from local mock state
+  if (USE_MOCK_BLOCKCHAIN) {
+    const [campaign, setCampaign] = useState<FormattedCampaign | undefined>(undefined);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
+
+    const load = () => {
+      try {
+        setIsLoading(true);
+        if (campaignId === undefined) {
+          setCampaign(undefined);
+        } else {
+          const c = mockGetCampaign(campaignId);
+          setCampaign(c);
+        }
+        setError(null);
+      } catch (e) {
+        setError(e as Error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    useEffect(() => {
+      if (campaignId !== undefined) {
+        load();
+      }
+    }, [campaignId]);
+
+    return {
+      campaign,
+      isLoading,
+      error,
+      refetch: load,
+    };
+  }
+
   const chainId = useChainId();
   const contractAddress = getContractAddress(chainId);
 

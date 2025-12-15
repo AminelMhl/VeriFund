@@ -1,5 +1,9 @@
 import donationAbi from "../abi/DonationRegistry.json";
 
+// Toggle this flag to switch between the real blockchain
+// and a local in-browser mock for demos.
+export const USE_MOCK_BLOCKCHAIN = true;
+
 // Hardhat localhost deployment (chainId 31337)
 export const CONTRACT_ADDRESS_LOCAL =
   "0x5FbDB2315678afecb367f032d93F642f64180aa3" as const;

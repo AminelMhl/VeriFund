@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useAccount, useChainId, useWriteContract } from "wagmi";
-import { CONTRACT_ABI, getContractAddress } from "../../lib/contract";
+import { CONTRACT_ABI, USE_MOCK_BLOCKCHAIN, getContractAddress } from "../../lib/contract";
 import { ethToWei } from "@/lib/utils";
+import { mockCreateCampaign } from "@/lib/mockChain";
 import Header from "@/components/Header";
 
 export default function CreateCampaign() {
@@ -15,19 +16,22 @@ export default function CreateCampaign() {
   const [description, setDescription] = useState("");
   const [goal, setGoal] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const { writeContract, data, error, isPending } = useWriteContract();
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     setErrorMessage("");
+    setSuccessMessage("");
 
     if (!title || !description || !goal) {
       setErrorMessage("Please fill in all fields.");
       return;
     }
 
-    if (!address) {
+    // In mock mode, no wallet is required
+    if (!USE_MOCK_BLOCKCHAIN && !address) {
       setErrorMessage("Connect your wallet first.");
       return;
     }
@@ -42,25 +46,33 @@ export default function CreateCampaign() {
 
     const metadataURI = "data:application/json," + JSON.stringify(metadata);
 
-    // goal in wei (as bigint)
-    const targetAmount = ethToWei(goal);
+    if (USE_MOCK_BLOCKCHAIN) {
+      // Local mock: just record the campaign in browser storage
+      mockCreateCampaign({
+        title,
+        description,
+        goalEth: goal,
+      });
+    } else {
+      // Real blockchain path
+      const targetAmount = ethToWei(goal);
 
-    // For now, use the connected wallet as the beneficiary and
-    // create a single milestone that represents the full goal.
-    const beneficiary = address as `0x${string}`;
-    const milestoneAmounts = [targetAmount];
-    const milestoneDescriptions = ["Full campaign"];
+      const beneficiary = address as `0x${string}`;
+      const milestoneAmounts = [targetAmount];
+      const milestoneDescriptions = ["Full campaign"];
 
-    writeContract({
-      address: contractAddress,
-      abi: CONTRACT_ABI as any,
-      functionName: "createCampaign",
-      args: [beneficiary, metadataURI, targetAmount, milestoneAmounts, milestoneDescriptions],
-    });
+      writeContract({
+        address: contractAddress,
+        abi: CONTRACT_ABI as any,
+        functionName: "createCampaign",
+        args: [beneficiary, metadataURI, targetAmount, milestoneAmounts, milestoneDescriptions],
+      });
+    }
 
     setTitle("");
     setDescription("");
     setGoal("");
+    setSuccessMessage("Campaign successfully created.");
   };
 
   return (
@@ -167,6 +179,18 @@ export default function CreateCampaign() {
               }}
             >
               {errorMessage || (error as Error).message}
+            </p>
+          )}
+
+          {successMessage && !errorMessage && !error && (
+            <p
+              style={{
+                marginTop: "1rem",
+                fontSize: "0.875rem",
+                color: "#166534",
+              }}
+            >
+              {successMessage}
             </p>
           )}
         </form>

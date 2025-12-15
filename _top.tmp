@@ -1,0 +1,260 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+/**
+ * ============================================================================
+ *                    VERIFUND - TRANSPARENT CHARITY DONATION SYSTEM
+ * ============================================================================
+ * 
+ * @title DonationRegistry
+ * @author VeriFund Team
+ * @notice A production-ready smart contract for transparent charity fundraising
+ *         with milestone-based fund release and third-party validation.
+ * 
+ * ============================================================================
+ *                              SYSTEM OVERVIEW
+ * ============================================================================
+ * 
+ * This contract implements a transparent donation tracking system where:
+ * 
+ * 1. ESCROW MODEL: Donated funds are held in the contract (not sent immediately)
+ * 2. MILESTONE-BASED: Campaigns are split into milestones with specific targets
+ * 3. PROOF OF WORK: Charities submit IPFS hashes as proof of milestone completion
+ * 4. VALIDATOR APPROVAL: Independent validators must approve before fund release
+ * 
+ * ============================================================================
+ *                              ROLE DEFINITIONS
+ * ============================================================================
+ * 
+ * ADMIN (DEFAULT_ADMIN_ROLE):
+ *   - The deployer (University/Platform)
+ *   - Can grant/revoke all roles
+ *   - Can pause/unpause the contract
+ *   - Can perform emergency withdrawals
+ * 
+ * CHARITY (CHARITY_ROLE):
+ *   - Authorized organizations that can create campaigns
+ *   - Submit proof of work (IPFS hashes) for milestones
+ *   - Cannot release funds without validator approval
+ * 
+ * VALIDATOR (VALIDATOR_ROLE):
+ *   - Trusted third party (Auditor/NGO/University)
+ *   - Reviews proof submissions
+ *   - Approves milestones to trigger fund release
+ *   - Acts as an independent verification layer
+ * 
+ * DONOR (No role required):
+ *   - Any public address can donate
+ *   - No registration needed
+ *   - Can track their donations on-chain
+ * 
+ * BENEFICIARY:
+ *   - The address receiving the funds
+ *   - Set per campaign by the Charity
+ *   - Receives funds only after milestone approval
+ 
+ * ============================================================================
+ *                              SECURITY FEATURES
+ * ============================================================================
+ * 
+ * 1. ReentrancyGuard: Prevents reentrancy attacks on all transfer functions
+ * 2. AccessControl: Role-based permissions (Admin, Charity, Validator)
+ * 3. Pausable: Emergency pause functionality
+ * 4. Escrow Pattern: Funds held until validator approval
+ * 5. IPFS Storage: Sensitive data stored off-chain as hashes
+ * 6. Pull Pattern: Beneficiaries receive funds via contract push after approval
+ * 
+ * ============================================================================
+ */
+
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+
+contract DonationRegistry is AccessControl, ReentrancyGuard, Pausable {
+    
+    // =========================================================================
+    //                              ROLE DEFINITIONS
+    // =========================================================================
+    
+    /**
+     * @dev CHARITY_ROLE: Granted to verified charity organizations
+     * @notice Only addresses with this role can create campaigns
+     * 
+     * How roles work in AccessControl:
+     * - Roles are identified by bytes32 hashes (not strings for gas efficiency)
+     * - keccak256 creates a unique hash from the string "CHARITY_ROLE"
+     * - Admin can grant/revoke this role using grantRole() / revokeRole()
+     */
+    bytes32 public constant CHARITY_ROLE = keccak256("CHARITY_ROLE");
+    
+    /**
+     * @dev VALIDATOR_ROLE: Granted to trusted third-party auditors
+     * @notice Only addresses with this role can approve milestones
+     * 
+     * Why separate validators?
+     * - Prevents charities from releasing their own funds
+     * - Adds accountability layer (auditors can be NGOs, universities, etc.)
+     * - Creates transparent verification trail on-chain
+     */
+    bytes32 public constant VALIDATOR_ROLE = keccak256("VALIDATOR_ROLE");
+
+    // =========================================================================
+    //                              DATA STRUCTURES
+    // =========================================================================
+    
+    /**
+     * @dev Milestone struct - Represents a single milestone within a campaign
+     * 
+     * @param amount The amount of ETH (in wei) allocated to this milestone
+     *               When approved, this exact amount is sent to the beneficiary
+     * 
+     * @param description A brief description of what this milestone represents
+     *                    Example: "Phase 1: Purchase medical supplies"
+     * 
+     * @param ipfsProofHash IPFS Content Identifier (CID) for proof documents
+     *                      Example: "QmXoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco"
+     *                      Stores: images, receipts, reports (off-chain)
+     *                      Why IPFS? Decentralized, immutable, cost-effective
+     * 
+     * @param isApproved Boolean flag set to true when validator approves
+     *                   Once true, funds are automatically released
+     * 
+     * @param isReleased Boolean flag to prevent double-spending
+     *                   Set to true after funds are transferred
+     */
+    struct Milestone {
+        uint256 amount;         // Wei amount for this milestone
+        string description;     // Human-readable milestone description
+        string ipfsProofHash;   // IPFS CID for proof of work (images/docs)
+        bool isApproved;        // Validator has approved this milestone
+        bool isReleased;        // Funds have been released to beneficiary
+        bool receiptConfirmed;  // Beneficiary confirmed receipt of funds
+    }
+    
+    /**
+     * @dev Campaign struct - Represents a fundraising campaign
+     * 
+     * @param id Unique identifier for the campaign (starts at 1)
+     * 
+     * @param charity Address of the charity that created this campaign
+     *                Must have CHARITY_ROLE to create campaigns
+     * 
+     * @param beneficiary Address that will receive the funds
+     *                    Can be different from charity (e.g., hospital, school)
+     *                    Funds are ONLY sent here after milestone approval
+     * 
+     * @param metadataURI IPFS hash pointing to campaign metadata JSON
+     *                    Contains: title, description, images, documents
+     *                    Example: "ipfs://QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG"
+     * 
+     * @param targetAmount Total fundraising goal in wei
+     *                     Should equal sum of all milestone amounts
+     * 
+     * @param currentAmount Total ETH donated so far (held in escrow)
+     * 
+     * @param milestoneCount Number of milestones in this campaign
+     *                       Used for iteration and validation
+     * 
+     * @param isActive Campaign is accepting donations
+     *                 Set to false when closed or fully funded
+     * 
+     * @param createdAt Unix timestamp when campaign was created
+     */
+    struct Campaign {
+        uint256 id;
+        address charity;            // Campaign creator (must have CHARITY_ROLE)
+        address payable beneficiary; // Receives funds after approval
+        string metadataURI;         // IPFS hash for campaign details
+        uint256 targetAmount;       // Fundraising goal (wei)
+        uint256 currentAmount;      // Amount raised so far (wei)
+        uint256 releasedAmount;     // Amount already released to beneficiary
+        uint256 milestoneCount;     // Number of milestones
+        bool isActive;              // Accepting donations?
+        uint256 createdAt;          // Creation timestamp
+    }
+
+    // =========================================================================
+    //                              STATE VARIABLES
+    // =========================================================================
+    
+    /**
+     * @dev Counter for generating unique campaign IDs
+     * @notice Starts at 1 (not 0) for better UX and to distinguish from default
+     */
+    uint256 public nextCampaignId;
+    
+    /**
+     * @dev Main storage for all campaigns
+     * @notice Mapping from campaign ID to Campaign struct
+     * 
+     * Why mapping instead of array?
+     * - O(1) lookup by ID (arrays would be O(n))
+     * - No need to iterate all campaigns on-chain
+     * - Off-chain indexing (The Graph) handles listing
+     */
+    mapping(uint256 => Campaign) public campaigns;
+    
+    /**
+     * @dev Storage for milestones within each campaign
+     * @notice campaigns[campaignId][milestoneIndex] => Milestone
+     * 
+     * Structure: campaignId => (milestoneIndex => Milestone)
+     * Example: milestones[1][0] = First milestone of Campaign #1
+     */
+    mapping(uint256 => mapping(uint256 => Milestone)) public milestones;
+    
+    /**
+     * @dev Track individual donor contributions
+     * @notice donationsByAddress[donorAddress][campaignId] => amount
+     * 
+     * Why track this?
+     * - Donors can verify their contributions
+     * - Enables refund functionality (future feature)
+     * - Provides transparency for auditing
+     */
+    mapping(address => mapping(uint256 => uint256)) public donationsByAddress;
+
+    // =========================================================================
+    //                              EVENTS
+    // =========================================================================
+    
+    /**
+     * @dev Events are crucial for:
+     * 1. Off-chain indexing (The Graph, Etherscan)
+     * 2. Frontend real-time updates (ethers.js listeners)
+     * 3. Creating an immutable audit trail
+     * 
+     * @notice 'indexed' parameters are searchable in logs (max 3 per event)
+     */
+    
+    /// @notice Emitted when a new campaign is created
+    event CampaignCreated(
+        uint256 indexed campaignId,
+        address indexed charity,
+        address indexed beneficiary,
+        string metadataURI,
+        uint256 targetAmount,
+        uint256 milestoneCount,
+        uint256 createdAt
+    );
+    
+    /// @notice Emitted when a milestone is added to a campaign
+    event MilestoneAdded(
+        uint256 indexed campaignId,
+        uint256 indexed milestoneIndex,
+        uint256 amount,
+        string description
+    );
+    
+    /// @notice Emitted when a donation is received
+    event DonationReceived(
+        uint256 indexed campaignId,
+        address indexed donor,
+        uint256 amount,
+        uint256 newTotal
+    );
+    
+    /// @notice Emitted when charity submits proof for a milestone
+    event ProofSubmitted(
+        uint256 indexed campaignId,
