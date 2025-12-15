@@ -1,0 +1,29 @@
+{
+  "sepolia": {
+    "network": "sepolia",
+    "chainId": 11155111,
+    "contract": "DonationRegistry",
+    "address": "0x8674906700964F1C5c357F41603f4da32B9E0eeb",
+    "deployer": "0x4316b8c9A61E08A7B163E6c18A95227b14BE1E08",
+    "timestamp": "2025-12-02T08:13:13.996Z",
+    "blockNumber": 9751634
+  },
+  "polygonAmoy": {
+    "network": "polygonAmoy",
+    "chainId": 80002,
+    "contract": "DonationRegistry",
+    "address": "0x1742f8DD80D5beCD346bfcdc13D48fcCE0AF8648",
+    "deployer": "0x25C1fb6adBAc06739B59edc5B8C1b3aB56eb55AF",
+    "timestamp": "2025-12-10T18:52:05.913Z",
+    "blockNumber": 30293448
+  },
+  "localhost": {
+    "network": "localhost",
+    "chainId": 31337,
+    "contract": "DonationRegistry",
+    "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "timestamp": "2025-12-15T19:19:14.881Z",
+    "blockNumber": 1
+  }
+}
