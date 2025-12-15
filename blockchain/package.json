@@ -1,15 +1,25 @@
 {
-  "name": "blockchain",
+  "name": "verifund-blockchain",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "test:gas": "REPORT_GAS=true npx hardhat test",
+    "test:coverage": "npx hardhat coverage",
+    "node": "npx hardhat node",
+    "deploy:local": "npx hardhat run scripts/deploy.js --network localhost",
+    "deploy:polygon-amoy": "npx hardhat run scripts/deploy.js --network polygonAmoy",
+    "deploy:polygon": "npx hardhat run scripts/deploy.js --network polygon",
+    "test:deployment": "npx hardhat run scripts/test-deployment.js",
+    "verify": "npx hardhat run scripts/verify.js",
+    "clean": "npx hardhat clean"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["polygon", "solidity", "hardhat", "donation", "charity", "blockchain", "layer2"],
+  "author": "VeriFund Team",
+  "license": "MIT",
   "type": "commonjs",
-  "description": "",
+  "description": "VeriFund - Decentralized donation platform smart contracts for transparent charity fundraising",
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
     "@nomicfoundation/hardhat-ethers": "^3.1.2",
@@ -25,7 +35,7 @@
     "@types/node": "^24.10.1",
     "chai": "^4.5.0",
     "ethers": "^6.15.0",
-    "hardhat": "^2.27.0",
+    "hardhat": "^2.27.1",
     "hardhat-gas-reporter": "^2.3.0",
     "solidity-coverage": "^0.8.16",
     "ts-node": "^10.9.2",
@@ -35,5 +45,8 @@
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",
     "dotenv": "^17.2.3"
+  },
+  "directories": {
+    "test": "test"
   }
 }
