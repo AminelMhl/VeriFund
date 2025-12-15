@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { useAccount, useChainId, useReadContract, useWriteContract } from "wagmi";
 import { useParams } from "next/navigation";
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from "../../../lib/contract";
+import { CONTRACT_ABI, getContractAddress } from "../../../lib/contract";
 
 export default function WithdrawPage() {
+  const chainId = useChainId();
+  const contractAddress = getContractAddress(chainId);
+
   const params = useParams<{ id: string }>();
   const campaignIdParam = params?.id;
   const campaignId = campaignIdParam ? Number(campaignIdParam) : NaN;
@@ -20,7 +23,7 @@ export default function WithdrawPage() {
     isLoading: isLoadingCampaign,
   } = useReadContract({
     abi: CONTRACT_ABI,
-    address: CONTRACT_ADDRESS,
+    address: contractAddress,
     functionName: "getCampaign",
     args: [campaignId],
     query: {
@@ -60,7 +63,7 @@ export default function WithdrawPage() {
     try {
       writeContract({
         abi: CONTRACT_ABI,
-        address: CONTRACT_ADDRESS,
+        address: contractAddress,
         functionName: "withdraw",
         args: [BigInt(campaignId), amountWei],
       });

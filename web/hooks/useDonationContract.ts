@@ -1,11 +1,14 @@
-import { useContractWrite, usePrepareContractWrite, useContractRead } from 'wagmi';
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from "../lib/contract";
+import { useChainId, useContractWrite, usePrepareContractWrite, useContractRead } from "wagmi";
+import { CONTRACT_ABI, getContractAddress } from "../lib/contract";
 
 export function useDonationContract() {
+  const chainId = useChainId();
+  const contractAddress = getContractAddress(chainId);
+
   return {
     useReadCampaign: (id: number) =>
       useContractRead({
-        address: CONTRACT_ADDRESS,
+        address: contractAddress,
         abi: CONTRACT_ABI,
         functionName: "campaigns",
         args: [id],
@@ -13,7 +16,7 @@ export function useDonationContract() {
 
     useDonateToCampaign: (id: number, value: bigint) => {
       const { config } = usePrepareContractWrite({
-        address: CONTRACT_ADDRESS,
+        address: contractAddress,
         abi: CONTRACT_ABI,
         functionName: "donateToCampaign",
         args: [id],

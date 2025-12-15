@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useWriteContract } from "wagmi";
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from "../../lib/contract";
+import { useAccount, useChainId, useWriteContract } from "wagmi";
+import { CONTRACT_ABI, getContractAddress } from "../../lib/contract";
+import { ethToWei } from "@/lib/utils";
 import Header from "@/components/Header";
 
 export default function CreateCampaign() {
+  const chainId = useChainId();
+  const contractAddress = getContractAddress(chainId);
+  const { address } = useAccount();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [goal, setGoal] = useState("");
@@ -22,6 +27,11 @@ export default function CreateCampaign() {
       return;
     }
 
+    if (!address) {
+      setErrorMessage("Connect your wallet first.");
+      return;
+    }
+
     // temporary metadata (later we can put on IPFS)
     const metadata = {
       title,
@@ -32,22 +42,25 @@ export default function CreateCampaign() {
 
     const metadataURI = "data:application/json," + JSON.stringify(metadata);
 
-    // goal in wei (simple conversion from ETH)
-    const goalWei = (Number(goal) * 1e18).toString();
+    // goal in wei (as bigint)
+    const targetAmount = ethToWei(goal);
 
-    try {
-      writeContract({
-        address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
-        functionName: "createCampaign",
-        args: [metadataURI, goalWei],
-      });
-      setTitle("");
-      setDescription("");
-      setGoal("");
-    } catch (_err) {
-      setErrorMessage("Failed to send transaction.");
-    }
+    // For now, use the connected wallet as the beneficiary and
+    // create a single milestone that represents the full goal.
+    const beneficiary = address as `0x${string}`;
+    const milestoneAmounts = [targetAmount];
+    const milestoneDescriptions = ["Full campaign"];
+
+    writeContract({
+      address: contractAddress,
+      abi: CONTRACT_ABI as any,
+      functionName: "createCampaign",
+      args: [beneficiary, metadataURI, targetAmount, milestoneAmounts, milestoneDescriptions],
+    });
+
+    setTitle("");
+    setDescription("");
+    setGoal("");
   };
 
   return (
@@ -144,6 +157,18 @@ export default function CreateCampaign() {
           >
             {isPending ? "Creating..." : "Create Campaign"}
           </button>
+
+          {(errorMessage || error) && (
+            <p
+              style={{
+                marginTop: "1rem",
+                fontSize: "0.875rem",
+                color: "#b91c1c",
+              }}
+            >
+              {errorMessage || (error as Error).message}
+            </p>
+          )}
         </form>
       </main>
     </>

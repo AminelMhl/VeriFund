@@ -1,7 +1,7 @@
 "use client";
 
-import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/lib/contract";
+import { useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { CONTRACT_ABI, getContractAddress } from "@/lib/contract";
 import { ethToWei } from "@/lib/utils";
 import type { UseDonateReturn } from "@/types/campaign";
 
@@ -78,6 +78,9 @@ function parseContractError(error: Error | null): string | null {
  * Manages transaction state and confirmation with user-friendly error handling
  */
 export function useDonate(): UseDonateReturn {
+  const chainId = useChainId();
+  const contractAddress = getContractAddress(chainId);
+
   const {
     writeContract,
     data: hash,
@@ -102,7 +105,7 @@ export function useDonate(): UseDonateReturn {
     const amountWei = ethToWei(amountETH);
     
     writeContract({
-      address: CONTRACT_ADDRESS,
+      address: contractAddress,
       abi: CONTRACT_ABI as any,
       functionName: "donateToCampaign",
       args: [campaignId],

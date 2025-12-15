@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   useAccount,
+  useChainId,
   useReadContract,
   useReadContracts,
   useWriteContract,
 } from "wagmi";
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from "../../lib/contract";
+import { CONTRACT_ABI, getContractAddress } from "../../lib/contract";
 import Header from "@/components/Header";
 
 const METADATA_PREFIX = "data:application/json,";
@@ -38,6 +39,8 @@ type RawCampaign = readonly [
 
 export default function AdminDashboard() {
   const { address } = useAccount();
+  const chainId = useChainId();
+  const contractAddress = getContractAddress(chainId);
 
   const {
     data: ownerAddress,
@@ -45,7 +48,7 @@ export default function AdminDashboard() {
     error: ownerError,
   } = useReadContract({
     abi: CONTRACT_ABI,
-    address: CONTRACT_ADDRESS,
+    address: contractAddress,
     functionName: "owner",
   });
 
@@ -55,7 +58,7 @@ export default function AdminDashboard() {
     error: countError,
   } = useReadContract({
     abi: CONTRACT_ABI,
-    address: CONTRACT_ADDRESS,
+    address: contractAddress,
     functionName: "nextCampaignId",
   });
 
@@ -67,7 +70,7 @@ export default function AdminDashboard() {
 
     return Array.from({ length: totalCampaigns }, (_v, i) => ({
       abi: CONTRACT_ABI,
-      address: CONTRACT_ADDRESS,
+      address: contractAddress,
       functionName: "getCampaign" as const,
       args: [BigInt(i + 1)],
     }));
@@ -107,7 +110,7 @@ export default function AdminDashboard() {
     setLastAction(`approve-${id.toString()}`);
     writeContract({
       abi: CONTRACT_ABI,
-      address: CONTRACT_ADDRESS,
+      address: contractAddress,
       functionName: "approveCampaign",
       args: [id],
     });
@@ -117,7 +120,7 @@ export default function AdminDashboard() {
     setLastAction(`close-${id.toString()}`);
     writeContract({
       abi: CONTRACT_ABI,
-      address: CONTRACT_ADDRESS,
+      address: contractAddress,
       functionName: "closeCampaign",
       args: [id],
     });

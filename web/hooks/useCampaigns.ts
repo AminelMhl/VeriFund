@@ -1,7 +1,7 @@
 "use client";
 
-import { useReadContracts } from "wagmi";
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from "@/lib/contract";
+import { useChainId, useReadContracts } from "wagmi";
+import { CONTRACT_ABI, getContractAddress } from "@/lib/contract";
 import { formatCampaign } from "@/lib/utils";
 import type { RawCampaign, UseCampaignsReturn, UseCampaignReturn } from "@/types/campaign";
 
@@ -10,11 +10,14 @@ import type { RawCampaign, UseCampaignsReturn, UseCampaignReturn } from "@/types
  * Uses batch reading for efficiency
  */
 export function useCampaigns(): UseCampaignsReturn {
+  const chainId = useChainId();
+  const contractAddress = getContractAddress(chainId);
+
   // First, get the next campaign ID to know how many campaigns exist
   const { data: nextIdData } = useReadContracts({
     contracts: [
       {
-        address: CONTRACT_ADDRESS,
+        address: contractAddress,
         abi: CONTRACT_ABI as any,
         functionName: "nextCampaignId",
       },
@@ -26,7 +29,7 @@ export function useCampaigns(): UseCampaignsReturn {
 
   // Build array of contract calls for all campaigns
   const campaignCalls = Array.from({ length: totalCampaigns }, (_, i) => ({
-    address: CONTRACT_ADDRESS,
+    address: contractAddress,
     abi: CONTRACT_ABI as any,
     functionName: "getCampaign",
     args: [BigInt(i + 1)],
@@ -66,6 +69,9 @@ export function useCampaigns(): UseCampaignsReturn {
  * @param campaignId Campaign ID to fetch
  */
 export function useCampaign(campaignId: bigint | undefined): UseCampaignReturn {
+  const chainId = useChainId();
+  const contractAddress = getContractAddress(chainId);
+
   const {
     data,
     isLoading,
@@ -75,7 +81,7 @@ export function useCampaign(campaignId: bigint | undefined): UseCampaignReturn {
     contracts: campaignId
       ? [
           {
-            address: CONTRACT_ADDRESS,
+            address: contractAddress,
             abi: CONTRACT_ABI as any,
             functionName: "getCampaign",
             args: [campaignId],
